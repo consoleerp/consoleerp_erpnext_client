@@ -18,26 +18,40 @@ Mandatory:,Yes,Yes,Yes,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,
 Type:,Data (text),Link,Select,Data,Data,Select,Select,Text,Check,Code,Text,Code,Text,Int,Data,Check,Check,Check,Check,Check,Check,Check,Check,Check,Check,Check,Check,Check,Check
 Info:,,Valid DocType,"One of: Attach, Attach Image, Button, Check, Code, Column Break, Currency, Data, Date, Datetime, Dynamic Link, Float, HTML, Image, Int, Link, Long Text, Password, Percent, Read Only, Section Break, Select, Small Text, Table, Text, Text Editor, Time",,,,"One of: 1, 2, 3, 4, 5, 6, 7, 8, 9",,0 or 1,,,,,Integer,,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1,0 or 1
 Start entering data below this line,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,"""Territory-consoleerp_abbr""",Territory,Data,Abbreviation,consoleerp_abbr,parent_territory,,,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Stock Entry-consoleerp_territory""",Stock Entry,Link,Territory,consoleerp_territory,purchase_receipt_no,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Stock Entry-consoleerp_territory_abbr""",Stock Entry,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Purchase Invoice-consoleerp_territory""",Purchase Invoice,Link,Territory,consoleerp_territory,bill_no,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Purchase Invoice-consoleerp_territory_abbr""",Purchase Invoice,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Purchase Invoice-consoleerp_warehouse""",Purchase Invoice,Link,Warehouse,consoleerp_warehouse,return_against,,Warehouse,0,,,eval:doc.update_stock==1,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Purchase Receipt-consoleerp_warehouse""",Purchase Receipt,Link,Warehouse,consoleerp_warehouse,company,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Purchase Receipt-consoleerp_territory""",Purchase Receipt,Link,Territory,consoleerp_territory,supplier_name,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Purchase Receipt-consoleerp_territory_abbr""",Purchase Receipt,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Supplier Quotation-consoleerp_warehouse""",Supplier Quotation,Link,Warehouse,consoleerp_warehouse,company,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Request for Quotation-consoleerp_warehouse""",Request for Quotation,Link,Warehouse,consoleerp_warehouse,transaction_date,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Material Request-consoleerp_warehouse""",Material Request,Link,Warehouse,consoleerp_warehouse,company,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Purchase Order-consoleerp_warehouse""",Purchase Order,Link,Warehouse,consoleerp_warehouse,consoleerp_territory,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Purchase Order-consoleerp_territory""",Purchase Order,Link,Territory,consoleerp_territory,company,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Purchase Order-consoleerp_territory_abbr""",Purchase Order,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Supplier Quotation-consoleerp_territory""",Supplier Quotation,Link,Territory,consoleerp_territory,supplier_name,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Supplier Quotation-consoleerp_territory_abbr""",Supplier Quotation,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Request for Quotation-consoleerp_territory""",Request for Quotation,Link,Territory,consoleerp_territory,vendor,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Request for Quotation-consoleerp_territory_abbr""",Request for Quotation,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Material Request-consoleerp_territory""",Material Request,Link,Territory,consoleerp_territory,material_request_type,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Material Request-consoleerp_territory_abbr""",Material Request,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Payment Request-consoleerp_territory""",Payment Request,Link,Territory,consoleerp_territory,naming_series,,Territory,0,,,,,0,,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Payment Request-consoleerp_territory_abbr""",Payment Request,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Payment Entry-consoleerp_territory""",Payment Entry,Link,Territory,consoleerp_territory,mode_of_payment,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Payment Entry-consoleerp_territory_abbr""",Payment Entry,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Warehouse-consoleerp_territory""",Warehouse,Link,Territory,consoleerp_territory,create_account_under,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Sales Invoice-consoleerp_warehouse""",Sales Invoice,Link,Warehouse,consoleerp_warehouse,return_against,,Warehouse,0,,,eval:doc.update_stock==1,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Sales Invoice-consoleerp_territory""",Sales Invoice,Link,Territory,consoleerp_territory,customer_name,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Sales Invoice-consoleerp_territory_abbr""",Sales Invoice,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Delivery Note-consoleerp_warehouse""",Delivery Note,Link,From Warehouse,consoleerp_warehouse,return_against,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Delivery Note-consoleerp_territory""",Delivery Note,Link,Territory,consoleerp_territory,customer_name,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Delivery Note-consoleerp_territory_abbr""",Delivery Note,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Sales Order-consoleerp_warehouse""",Sales Order,Link,Delivery Warehouse,consoleerp_warehouse,po_date,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Sales Order-consoleerp_territory""",Sales Order,Link,Territory,consoleerp_territory,order_type,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Sales Order-consoleerp_territory_abbr""",Sales Order,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Quotation-consoleerp_territory""",Quotation,Link,Territory,consoleerp_territory,order_type,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Quotation-consoleerp_territory_abbr""",Quotation,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0

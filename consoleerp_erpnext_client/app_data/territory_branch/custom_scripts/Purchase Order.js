@@ -1,3 +1,5 @@
+cur_frm.add_fetch("consoleerp_territory", "consoleerp_abbr", "consoleerp_territory_abbr");
+
 frappe.ui.form.on("Purchase Order", {
 	refresh : function(frm) {
 		frm.set_query("consoleerp_warehouse", function() {

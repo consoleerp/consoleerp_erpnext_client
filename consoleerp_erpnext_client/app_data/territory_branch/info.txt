@@ -1,0 +1,20 @@
+** document for informational purpose only
+** not referenced in any of the codes
+
+Selling
+Quotation
+Sales Order
+Delivery Note
+Sales Invoice
+
+Purchase
+Material Request
+Request for Quotation
+Supplier Quotation
+Purchase Order
+Purchase Receipt
+Purchase Invoice
+
+Stock Entry
+Payment Entry
+Payment Request

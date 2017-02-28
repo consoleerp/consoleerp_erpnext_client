@@ -3,15 +3,33 @@
 
 frappe.ui.form.on('Implementation', {
 	territory_branch : function(frm, cdt, cdn) {
-		frappe.call({
-			"method" : "consoleerp_erpnext_client.app_data.territory_branch.territory_branch_src.setup",
-			callback : function(r) {
-				if (r.message == "1"){
-					msgprint("Success!");
-				} else {
-					msgprint("Failed");
-				}
-			}
+		
+		var d = new frappe.ui.Dialog({
+			'fields': [
+				{'fieldname': 'ht', 'fieldtype': 'Text'}
+			]
 		});
+		d.fields_dict.ht.$wrapper.html('Please wait..');
+		d.show();
+		
+		frappe.after_ajax(function() {
+		
+			frappe.call({
+				"method" : "consoleerp_erpnext_client.app_data.territory_branch.territory_branch_src.setup",
+				callback : function(r) {
+					d.hide();
+					if (r.message == "1"){
+						msgprint("Success!");
+					} else {
+						msgprint("Failed!");
+					}									
+				}
+			});
+		});					
 	}
 });
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
