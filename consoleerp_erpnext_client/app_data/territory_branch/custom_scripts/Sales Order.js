@@ -8,6 +8,13 @@ frappe.ui.form.on("Sales Order", {
 			}
 		});	
 
+		frm.set_query("customer", function() {
+			return {
+				query : "consoleerp_erpnext_client.api.custom_link_queries.customer_query",
+				filters : {"territory" : cur_frm.doc.consoleerp_territory}
+			}
+		});
+		
 		frm.set_query("warehouse", "items", function(doc, cdt, cdn) {
 			return {
 				filters : { "consoleerp_territory" : doc.consoleerp_territory, "is_group" : 0}
@@ -21,6 +28,7 @@ frappe.ui.form.on("Sales Order", {
 	// setting warehouse = null on territory change
 	consoleerp_territory : function(frm, cdt, cdn) {
 		frappe.model.set_value(cdt, cdn, "consoleerp_warehouse", null);
+		frappe.model.set_value(cdt, cdn, "customer", null);
 	},
 	
 	consoleerp_warehouse : function(frm, cdt, cdn) {
