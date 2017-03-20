@@ -1,0 +1,5 @@
+{
+	"js/consoleerp_erpnext_client.min.js" : [
+		"app_data/advanced_item_search/item_search.js"
+	]
+}
