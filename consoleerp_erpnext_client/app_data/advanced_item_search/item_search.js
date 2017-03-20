@@ -62,8 +62,10 @@ var search = function(dialog){
 
 						// on click of item
 						// if first item is empty--
-						var cdn = cur_frm.doctype + " Item"; // Sales Invoice Item, Sales Order Item
-						if (cur_frm.doc.items.length > 0 && !cur_frm.doc.items[cur_frm.doc.items.length-1].item_code)
+						var cdn = cur_frm.fields_dict["items"].grid.doctype; // Sales Invoice Item, Sales Order Item, Stock Entry Detail					
+						
+						// in Quotation, it starts with no doc.items
+						if (cur_frm.doc.items && cur_frm.doc.items.length > 0 && !cur_frm.doc.items[cur_frm.doc.items.length-1].item_code)
 						{
 							frappe.model.set_value(cdn, cur_frm.doc.items[cur_frm.doc.items.length-1].name, "item_code", value);
 						} 
