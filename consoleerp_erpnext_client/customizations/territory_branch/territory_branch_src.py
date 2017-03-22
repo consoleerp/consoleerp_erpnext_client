@@ -7,7 +7,7 @@ def setup():
 		- Imports Custom_Field.csv
 		- Import all the scripts in custom_scripts
 	"""
-	data_path = frappe.get_app_path("consoleerp_erpnext_client", "app_data", "territory_branch")
+	data_path = frappe.get_app_path("consoleerp_erpnext_client", "customizations", "territory_branch")
 
 	# naming series data 
 	naming_series_data = {
@@ -33,6 +33,7 @@ def setup():
 		# import Custom_Field.csv
 		import_doc(data_path + os.path.sep + "Custom_Field.csv", ignore_links=True, overwrite=True)
 		
+		
 		# import custom scripts-------------------------------
 		for fname in os.listdir(data_path + os.path.sep + "custom_scripts"):
 			if fname.endswith(".js"):
@@ -50,7 +51,8 @@ def setup():
 							"script_type" : "Client",
 							"script" : script
 						}).insert()
-					
+		
+		
 		# --------------------------------------------------------------------------
 		# import naming series
 		for doctype in naming_series_data:
