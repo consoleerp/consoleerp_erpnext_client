@@ -45,13 +45,13 @@ Start entering data below this line,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,"""Payment Entry-consoleerp_territory_abbr""",Payment Entry,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Warehouse-consoleerp_territory""",Warehouse,Link,Territory,consoleerp_territory,create_account_under,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Sales Invoice-consoleerp_warehouse""",Sales Invoice,Link,Warehouse,consoleerp_warehouse,return_against,,Warehouse,0,,,eval:doc.update_stock==1,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
-,"""Sales Invoice-consoleerp_territory""",Sales Invoice,Link,Territory,consoleerp_territory,customer_name,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Sales Invoice-consoleerp_territory""",Sales Invoice,Link,Territory,consoleerp_territory,naming_series,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Sales Invoice-consoleerp_territory_abbr""",Sales Invoice,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Delivery Note-consoleerp_warehouse""",Delivery Note,Link,From Warehouse,consoleerp_warehouse,return_against,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
-,"""Delivery Note-consoleerp_territory""",Delivery Note,Link,Territory,consoleerp_territory,customer_name,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Delivery Note-consoleerp_territory""",Delivery Note,Link,Territory,consoleerp_territory,naming_series,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Delivery Note-consoleerp_territory_abbr""",Delivery Note,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Sales Order-consoleerp_warehouse""",Sales Order,Link,Delivery Warehouse,consoleerp_warehouse,po_date,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
-,"""Sales Order-consoleerp_territory""",Sales Order,Link,Territory,consoleerp_territory,order_type,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Sales Order-consoleerp_territory""",Sales Order,Link,Territory,consoleerp_territory,naming_series,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Sales Order-consoleerp_territory_abbr""",Sales Order,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
-,"""Quotation-consoleerp_territory""",Quotation,Link,Territory,consoleerp_territory,order_type,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Quotation-consoleerp_territory""",Quotation,Link,Territory,consoleerp_territory,naming_series,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Quotation-consoleerp_territory_abbr""",Quotation,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
