@@ -1,5 +1,27 @@
-document.addEventListener('keydown', (event) => {		
-	if (event.key == "F2"){
+// simply creating an event is a problem.
+// it will come again and again in subsequent documents
+// handle adding and removal of the event
+// on hashchange remove the handler
+
+frappe.ui.form.on(cur_frm.doctype, {
+	setup : function(frm) {
+		
+		document.addEventListener('keydown', keyDownEvent);
+		
+		function removeBind() {
+			// remove item search
+			document.removeEventListener('keydown', keyDownEvent, false);
+			// remove this
+			$(window).off('hashchange', removeBind);
+		}
+		
+		// remove the keydown event and thisone
+		$(window).on('hashchange', removeBind);
+	}
+});
+
+function keyDownEvent(event) {
+	if (event.key == "F2" && cur_frm.doc.__islocal){
 				
 		dialog = new frappe.ui.Dialog({
 			title: __("Select {0}", [(cur_frm.doctype=='[Select]') ? __("value") : __("Item")]),
@@ -29,8 +51,7 @@ document.addEventListener('keydown', (event) => {
 		search(dialog);
 		
 	}
-}, false);
-
+}
 
 var search = function(dialog){
 	
