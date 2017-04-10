@@ -33,7 +33,7 @@ def setup():
 		# import Custom_Field.csv
 		import_doc(data_path + os.path.sep + "Custom_Field.csv", ignore_links=True, overwrite=True)
 		
-		
+		"""
 		# import custom scripts-------------------------------
 		for fname in os.listdir(data_path + os.path.sep + "custom_scripts"):
 			if fname.endswith(".js"):
@@ -51,7 +51,7 @@ def setup():
 							"script_type" : "Client",
 							"script" : script
 						}).insert()
-		
+		"""
 		
 		# --------------------------------------------------------------------------
 		# import naming series
