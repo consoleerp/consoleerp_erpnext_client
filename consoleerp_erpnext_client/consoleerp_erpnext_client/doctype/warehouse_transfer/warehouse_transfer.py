@@ -55,13 +55,14 @@ class WarehouseTransfer(StockController):
 		"""
 		Warehouse Transfer Detail has the field reference_warehouse_transfer
 		TODO -- replaces `status` field updation by StatusUpdater, its one of the base class of StockController
+		THIS IS CALLED ON SUBMIT AND CANCEL ONLY
 		"""
 		if self.purpose == "Transfer Receive":
 			# for now, we will get the reference w transfer from row1 and update it over simply
 			ref_wt = self.get('items')[0].reference_warehouse_transfer
 			if ref_wt:
 				current_status = frappe.db.get_value("Warehouse Transfer", ref_wt, "status")
-				if current_status != "Issued":
+				if current_status != "Issued" and self.docstatus == 1: # check this when submitting only
 					frappe.throw(_("Can receive items from a issued Warehouse Transfer transaction only"))
 					
 				# this is called either on cancel or on submit
@@ -93,7 +94,7 @@ class WarehouseTransfer(StockController):
 				
 		# RESEARCH comma_and
 		if wts:
-			frappe.throw(_("Warehouse Transfer {0} must be cancelled before cancelling this Warehouse Transfer").format(comma_and(wts)))
+			frappe.throw(_("Warehouse Transfer {0} must be deleted before cancelling this Warehouse Transfer").format(comma_and(wts)))
 	
 	def update_stock_ledger(self):
 		sl_entries = []				
