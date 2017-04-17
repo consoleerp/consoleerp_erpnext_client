@@ -121,8 +121,11 @@ class WarehouseTransfer(StockController):
 		
 		self.make_sl_entries(sl_entries, self.amended_from and 'Yes' or 'No')
 		
-	def set_transfer_qty(self):
+	def set_transfer_qty(self):					
 		for d in self.get("items"):
+			
+			if (d.s_warehouse == d.t_warehouse):
+				frappe.throw(_("Row {0}: Source Warehouse equals Target Warehouse").format(d.idx))
 			if not flt(d.qty):
 				frappe.throw(_("Row {0}: Qty is mandatory").format(d.idx))
 			if not flt(d.conversion_factor):
@@ -269,8 +272,7 @@ class WarehouseTransfer(StockController):
 
 	def reset_posting_time(self):
 		self.posting_date = nowdate()
-		self.posting_time = nowtime()
-		frappe.msgprint(nowdate() + " -- " + nowtime())
+		self.posting_time = nowtime()		
 		
 	def get_gl_entries(self, warehouse_account):
 		expenses_included_in_valuation = self.get_company_default("expenses_included_in_valuation")
