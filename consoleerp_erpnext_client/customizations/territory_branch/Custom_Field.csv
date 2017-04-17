@@ -21,8 +21,8 @@ Start entering data below this line,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,"""Territory-consoleerp_abbr""",Territory,Data,Abbreviation,consoleerp_abbr,parent_territory,,,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Stock Entry-consoleerp_territory""",Stock Entry,Link,Territory,consoleerp_territory,purchase_receipt_no,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Stock Entry-consoleerp_territory_abbr""",Stock Entry,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
-,"""Purchase Invoice-consoleerp_territory""",Purchase Invoice,Link,Territory,consoleerp_territory,bill_no,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
-,"""Purchase Invoice-consoleerp_territory_abbr""",Purchase Invoice,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
+,"""Warehouse Transfer-consoleerp_territory""",Warehouse Transfer,Link,Territory,consoleerp_territory,company,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
+,"""Warehouse Transfer-consoleerp_territory_abbr""",Warehouse Transfer,Data,Territory Code,consoleerp_territory_abbr,consoleerp_territory,,,,,,,,0,,0,0,0,0,1,1,0,0,0,0,0,0,1,0
 ,"""Purchase Invoice-consoleerp_warehouse""",Purchase Invoice,Link,Warehouse,consoleerp_warehouse,return_against,,Warehouse,0,,,eval:doc.update_stock==1,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Purchase Receipt-consoleerp_warehouse""",Purchase Receipt,Link,Warehouse,consoleerp_warehouse,company,,Warehouse,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 ,"""Purchase Receipt-consoleerp_territory""",Purchase Receipt,Link,Territory,consoleerp_territory,supplier_name,,Territory,0,,,,,0,,1,0,0,0,0,0,0,0,0,0,0,0,0,0

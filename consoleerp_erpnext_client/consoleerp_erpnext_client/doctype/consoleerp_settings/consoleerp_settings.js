@@ -15,7 +15,7 @@ frappe.ui.form.on('ConsoleERP Settings', {
 		frappe.after_ajax(function() {
 		
 			frappe.call({
-				"method" : "consoleerp_erpnext_client.customizations.territory_branch.territory_branch_src.setup",
+				"method" : "consoleerp_erpnext_client.customizations.territory_branch.setup",
 				callback : function(r) {
 					d.hide();
 					if (r.message == "1"){

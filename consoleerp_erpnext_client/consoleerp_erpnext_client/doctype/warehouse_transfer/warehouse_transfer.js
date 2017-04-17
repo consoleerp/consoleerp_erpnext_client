@@ -13,7 +13,7 @@ frappe.ui.form.on('Warehouse Transfer', {
 	
 	refresh: function(frm) {
 		// Receive Items
-		if (frm.doc.purpose != "Transfer Receive" && (frm.doc.docstatus == 1 || frm.doc.__islocal))
+		if (frm.doc.purpose != "Transfer Receive" && ((frm.doc.docstatus == 1 && frm.doc.status != "Received") || frm.doc.__islocal))
 		{			
 			// RESEARCH
 			// add_custom_button works in refresh only
