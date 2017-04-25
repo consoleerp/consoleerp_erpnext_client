@@ -14,16 +14,5 @@
  "owner": "Administrator", 
  "ref_doctype": "GL Entry", 
  "report_name": "Customer Statement", 
- "report_type": "Script Report", 
- "roles": [
-  {
-   "role": "Accounts User"
-  }, 
-  {
-   "role": "Accounts Manager"
-  }, 
-  {
-   "role": "Auditor"
-  }
- ]
+ "report_type": "Script Report"
 }

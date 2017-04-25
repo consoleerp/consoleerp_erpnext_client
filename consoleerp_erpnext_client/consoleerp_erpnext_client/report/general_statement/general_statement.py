@@ -36,7 +36,6 @@ def execute(filters=None):
 		if row[1] not in row_ignore_calc:
 			balance = balance + row[2] if row[2] != None else balance
 			balance = balance - row[3] if row[3] != None else balance
-			row[1] = row[8]
 		
 		# insert only if there is value in credit or debit
 		# donot insert when not 
