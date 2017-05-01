@@ -1,1 +1,3 @@
 frappe
+erpnext
+google-api-python-client
