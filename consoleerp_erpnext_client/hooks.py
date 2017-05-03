@@ -17,6 +17,7 @@ app_license = "MIT"
 # include js, css files in header of desk.html
 # app_include_css = "/assets/consoleerp_erpnext_client/css/consoleerp_erpnext_client.css"
 # app_include_js = "/assets/consoleerp_erpnext_client/js/consoleerp_erpnext_client.js"
+app_include_js = "/assets/js/consoleerp.min.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/consoleerp_erpnext_client/css/consoleerp_erpnext_client.css"
@@ -80,7 +81,11 @@ app_license = "MIT"
 
 # Scheduled Tasks
 # ---------------
-
+scheduler_events = {
+	"daily": [
+		"consoleerp_erpnext_client.utils.google_drive.upload_backup"
+	]
+}
 # scheduler_events = {
 # 	"all": [
 # 		"consoleerp_erpnext_client.tasks.all"

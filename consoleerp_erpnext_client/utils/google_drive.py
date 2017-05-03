@@ -19,30 +19,31 @@ def upload_backup():
 	drive_service = discovery.build('drive', 'v3', http=http)
 	
 	client_folder_id = get_client_folder_id(drive_service)
-	print "client Folder: %s" % client_folder_id
-	
+	print("Client Folder ID: %s" % client_folder_id)
+		
 	# backup data
-	from frappe.utils.backups import BackupGenerator
-	odb = BackupGenerator(frappe.conf.db_name, frappe.conf.db_name,\
-						  frappe.conf.db_password, db_host = frappe.db.host)
-	# older than is not applicable since its forced
-	odb.get_backup(older_than=1, ignore_files=False, force=True)	
-	print "Backup Successful : %s" % os.path.abspath(odb.backup_path_db)
+	from consoleerp_erpnext_client.utils.system import backup
+	backup_dict = backup()
+	print("Backup Successful : %s" % os.path.abspath(backup_dict['db']))
 	
 	today_folder_id = get_today_folder_id(drive_service, client_folder_id)
 	
-	for filepath in [os.path.abspath(odb.backup_path_db), os.path.abspath(odb.backup_path_private_files ), os.path.abspath(odb.backup_path_files )]:
+	for filepath in [os.path.abspath(backup_dict['db']), os.path.abspath(backup_dict['private_files']), os.path.abspath(backup_dict['files'])]:
 		filename = os.path.basename(filepath)
 		response = drive_service.files().create(body={'name': filename, 'parents': [today_folder_id]}, fields="id", media_body=MediaFileUpload(filepath)).execute()
-		print "Uploaded %s : %s" % (filename, response.get("id"))
+		print("Uploaded %s : %s" % (filename, response.get("id")))
 	
 def get_client_folder_id(drive_service):
 	"""
 	Returns the client folder to take the backups
 	TODO fetch client name
 	"""
-	client_name = frappe.db.get_value("ConsoleERP Settings", filters="*", fieldname="client_name")
-	print client_name
+	client_name = frappe.db.get_value("ConsoleERP Settings", filters="*", fieldname="client_name")	
+	if not client_name:
+		print("Client Name not set")
+		return None
+	
+	print("Client Name: %s" % client_name)
 	
 	response = drive_service.files().list(q="name = '%s' and mimeType='application/vnd.google-apps.folder'" % client_name, pageSize=1,
 														fields='nextPageToken, files(id, name)').execute()
@@ -52,7 +53,7 @@ def get_client_folder_id(drive_service):
 	# client folder doesnt exist. creating folder	
 	file = drive_service.files().create(body={ 'name': client_name, 'mimeType': 'application/vnd.google-apps.folder'},
 																	fields="id").execute()	
-	print "Folder Created. ID: %s" % file.get("id")
+	print("Folder Created. ID: %s" % file.get("id"))
 	
 	return file.get("id")	
 	
