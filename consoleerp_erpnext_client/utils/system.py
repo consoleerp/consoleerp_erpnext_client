@@ -5,12 +5,14 @@ from frappe.utils import get_url
 def take_backup():
 	backup_dict = backup()
 	
-	db_url = get_url(os.path.join('backups', os.path.basename(backup_dict.get('db'))))
-	files_url = get_url(os.path.join('backups', os.path.basename(backup_dict.get('files'))))
-	private_files_url = get_url(os.path.join('backups', os.path.basename(backup_dict.get('private_files'))))
+	db_url = '/backups/%s' % os.path.basename(backup_dict.get('db'))
+	files_url = '/backups/%s' % os.path.basename(backup_dict.get('files'))
+	private_files_url = '/backups/%s' % os.path.basename(backup_dict.get('private_files'))
 	
 	# backupname
 	split_name = os.path.basename(backup_dict.get('db')).split('_')
+	
+	# just get the filename
 	backup_name = '_'.join(split_name[:-1])
 	
 	odb = backup_dict.get('odb')
@@ -31,7 +33,7 @@ def zip_and_download_files(filename, files):
 	cmd_string = """tar -cf %s %s""" % (zip_path, " ".join(files))		
 	err, out = frappe.utils.execute_in_shell(cmd_string)
 	
-	return get_url(os.path.join('backups', os.path.basename(zip_path)))
+	return '/backups/%s' % os.path.basename(zip_path)
 	
 def backup():
 	# backup data

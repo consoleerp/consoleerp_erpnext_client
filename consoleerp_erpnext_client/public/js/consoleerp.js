@@ -66,8 +66,7 @@ function page_changed(event) {
 										files: r.message.abs_paths
 									},
 									callback: function(r) {
-										if (r.message) {
-											show_alert("opening");
+										if (r.message) {											
 											window.location.href = r.message;
 										}
 									}
@@ -82,9 +81,4 @@ function page_changed(event) {
 			});
 		}
 	});
-}
-
-
-function download_all() {
-	alert("hiii");
 }
