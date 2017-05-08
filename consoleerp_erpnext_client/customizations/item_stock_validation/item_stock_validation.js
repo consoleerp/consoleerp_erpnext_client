@@ -75,7 +75,7 @@ var validate_item_stock = function(child_doc) {
 
 					// V8
 					// change to stock_qty
-					if (child_doc.qty > compare_qty) {
+					if (child_doc.qty > (compare_qty / child_doc.conversion_factor)) {
 						if (item_stock.item_stock_qty_correction_type === "Set to 0") {
 							frappe.msgprint("Not enough stock for "+ child_doc.item_code +" in warehouse "+ child_doc.warehouse +". Qty available is " + compare_qty);
 							frappe.model.set_value(child_doc.doctype, child_doc.name, "qty", 0);

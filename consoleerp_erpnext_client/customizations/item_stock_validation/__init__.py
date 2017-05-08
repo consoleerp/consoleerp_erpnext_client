@@ -20,7 +20,7 @@ def validate(self, method):
 			continue
 		
 		# V8
-		if d.qty > inf[qty_string]:
+		if d.qty > (inf[qty_string] / d.conversion_factor):
 			msg = _("Not enough stock for {0} in warehouse {1}. {2} is {3}").format(d.item_code, d.warehouse, settings.item_stock_compare_with, inf[qty_string] or 0)
 			if settings.item_stock_throw_type == "Prevent Saving":
 				frappe.throw(msg)
