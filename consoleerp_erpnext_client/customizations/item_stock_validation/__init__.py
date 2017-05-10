@@ -14,9 +14,10 @@ def validate(self, method):
 	qty_string = (settings.item_stock_compare_with.replace(" ", "_")).lower()
 	
 	for d in self.items:
-		inf = item_warehouse_info(d.item_code, d.warehouse)[0] or {}
+		inf = item_warehouse_info(d.item_code, d.warehouse)
+		inf = item_warehouse_info(d.item_code, d.warehouse)[0] if (inf and inf[0]) else {}
 		# is returned not_stock_item when its not
-		if inf == "not_stock_item":
+		if inf == "not_stock_item" or not inf[qty_string]:
 			continue
 		
 		# V8
