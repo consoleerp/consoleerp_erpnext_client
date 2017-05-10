@@ -17,7 +17,7 @@ def validate(self, method):
 		inf = item_warehouse_info(d.item_code, d.warehouse)
 		inf = item_warehouse_info(d.item_code, d.warehouse)[0] if (inf and inf[0]) else {}
 		# is returned not_stock_item when its not
-		if inf == "not_stock_item" or not inf[qty_string]:
+		if inf == "not_stock_item" or not inf.get(qty_string, False):
 			continue
 		
 		# V8
