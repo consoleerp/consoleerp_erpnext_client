@@ -33,21 +33,20 @@ def execute(filters=None):
 	
 	# insert balance values
 	balance = 0
-	row_ignore_calc = ["'" + _("Closing (Opening + Totals)") + "'", "'" +  _("Totals") + "'", "'" + _("Opening") + "'"]
+	row_ignore_calc = ["'" + _("Closing (Opening + Totals)") + "'", "'" +  _("Totals") + "'"]
 	for row in res:
 		if row[1] not in row_ignore_calc:
 			balance = balance + row[2] if row[2] != None else balance
 			balance = balance - row[3] if row[3] != None else balance
-			row[1] = row[8]
+			
+			# calculate balance for opening row, but do not shift the account
+			if row[1] != "'" + _("Opening") + "'":
+				row[1] = row[8]
 		
 		# insert only if there is value in credit or debit
 		# donot insert when not 
 		insert = row[2] or row[3]
 		if insert != None:
 			row.insert(4, balance)
-	
-	print "\n\n\n"
-	print res
-	print "\n\n\n"
 	
 	return columns, res

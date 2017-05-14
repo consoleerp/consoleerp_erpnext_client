@@ -31,7 +31,7 @@ def execute(filters=None):
 	
 	# insert balance values
 	balance = 0
-	row_ignore_calc = ["'" + _("Closing (Opening + Totals)") + "'", "'" +  _("Totals") + "'", "'" + _("Opening") + "'"]
+	row_ignore_calc = ["'" + _("Closing (Opening + Totals)") + "'", "'" +  _("Totals") + "'"]
 	for row in res:
 		if row[1] not in row_ignore_calc:
 			balance = balance + row[2] if row[2] != None else balance
