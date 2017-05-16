@@ -1,7 +1,6 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
-// License: GNU General Public License v3. See license.txt
+// Console ERP Solutions
 
-frappe.query_reports["General Statement"] = {
+frappe.query_reports["Statement for Party"] = {
 	"filters": [
 		{
 			"fieldname":"company",
@@ -28,34 +27,13 @@ frappe.query_reports["General Statement"] = {
 			"width": "60px"
 		},
 		{
-			"fieldname":"account",
-			"label": __("Account"),
-			"fieldtype": "Link",
-			"options": "Account",
-			"get_query": function() {
-				var company = frappe.query_report_filters_by_name.company.get_value();
-				return {
-					"doctype": "Account",
-					"filters": {
-						"company": company,
-					}
-				}
-			},
-			"reqd": 1
-		},
-		{
-			"fieldname":"voucher_no",
-			"label": __("Voucher No"),
-			"fieldtype": "Data",
-		},
-		{
 			"fieldtype": "Break",
 		},
 		{
 			"fieldname":"party_type",
 			"label": __("Party Type"),
-			"fieldtype": "Select",
-			"options": ["", "Customer", "Supplier"],
+			"fieldtype": "Link",
+			"options": "Party Type",
 			"default": ""
 		},
 		{
@@ -69,25 +47,32 @@ frappe.query_reports["General Statement"] = {
 					frappe.throw(__("Please select Party Type first"));
 				}
 				return party_type;
+			},
+			change: function() {
+				var party_type = frappe.query_report_filters_by_name.party_type.get_value();
+				var party = frappe.query_report_filters_by_name.party.get_value();
+				if(!party_type || !party) {
+					frappe.query_report_filters_by_name.party_name.set_value("");
+					return;
+				}
+
+				var fieldname = party_type.toLowerCase() + "_name";
+				frappe.db.get_value(party_type, party, fieldname, function(value) {
+					frappe.query_report_filters_by_name.party_name.set_value(value[fieldname]);
+				});
 			}
 		},
 		{
-			"fieldname":"group_by_voucher",
-			"label": __("Group by Voucher"),
+			"fieldname":"party_name",
+			"label": __("Party Name"),
+			"fieldtype": "Data",
+			"hidden": 1
+		},
+		{
+			"fieldname":"summary_report",
+			"label": __("Summary Report"),
 			"fieldtype": "Check",
 			"default": 1
-		},
-		{
-			"fieldname":"group_by_account",
-			"label": __("Group by Account"),
-			"fieldtype": "Check",
-		},
-		{
-			"fieldname":"letter_head",
-			"label": __("Letter Head"),
-			"fieldtype": "Link",
-			"options": "Letter Head",
-			"default": frappe.defaults.get_default("letter_head"),
 		}
 	]
 }
