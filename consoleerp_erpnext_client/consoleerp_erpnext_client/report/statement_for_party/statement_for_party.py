@@ -10,11 +10,6 @@ def execute(filters=None):
 	validate_filters(filters)
 	
 	columns, data = get_columns(filters), get_data(filters)
-	print("\n\n\n=================================")
-	print(columns)
-	print("===================================\n\n")
-	print(data)
-	print("===================================\n\n")
 	return columns, data
 		
 def validate_filters(filters):
@@ -57,8 +52,6 @@ def get_columns(filters):
 def get_data(filters):
 	gl_entries = get_gl_entries(filters)	
 	data = get_data_with_opening_closing(filters, gl_entries)
-	print("data")
-	print(data)
 	result = get_result_as_list(data, filters)
 	return result
 	
