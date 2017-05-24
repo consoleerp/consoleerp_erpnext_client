@@ -1,0 +1,64 @@
+{% var letterhead = filters.letter_head || frappe.get_doc(":Company", filters.company).default_letter_head || frappe.defaults.get_default("letter_head"); %}
+{% if(letterhead) { %}
+	<div style="margin-bottom: 7px;" class="text-center">
+		{%= frappe.boot.letter_heads[letterhead].header %}
+	</div>
+{% } %}
+<h2 class="text-center">{%= __(report.report_name) %}</h2>
+<h3 class="text-center">{%= filters.company %}</h3>
+<h4 class="text-center">
+	{%= dateutil.str_to_user(filters.from_date) %}
+	{%= __("to") %}
+	{%= dateutil.str_to_user(filters.to_date) %}
+</h4>
+<hr>
+<table class="table table-bordered">
+	<thead>
+		<tr>
+			{% if (!filters.summary_report) { %}
+				<th style="width: 15%">{%= __("Date") %}</th>
+				<th style="width: 20%">{%= __(filters.doctype) %}</th>
+				<th style="width: 20%">{%= __("Sales Person") %}</th>
+			{% } else { %}			
+				<th style="width: 25%">{%= __("Sales Person") %}</th>
+				<th style="width: 15%">{%= __("Gross Total") %}</th>			
+				<th style="width: 15%">{%= __("Discount") %}</th>
+			{% } %}			
+			<th style="width: 15%">{%= __("Net Total") %}</th>			
+			<th style="width: 10%">{%= __("Profit") %}</th>
+			<th style="width: 10%">{%= __("Profit %") %}</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for(var i=0, l=data.length; i<l; i++) { %}
+			<tr>
+			{% if(!filters.summary_report) { %}
+				<td>{%= dateutil.str_to_user(data[i][__("Posting Date")]) %}</td>
+				<td>
+					{%= data[i][__(filters.doctype)] %}
+					<br>
+					{%= data[i][__("Customer")] %}
+					<br>
+					{%= data[i][__("Territory")] %}
+				</td>
+				<td>
+					{%= data[i][__("Sales Person")] %}
+				</td>
+				<td style="text-align: right">{%= format_currency(data[i][__("Net Total")]) %}</td>
+				<td style="text-align: right">{%= format_currency(data[i][__("Profit")]) %}</td>
+				<td style="text-align: right">{%= format_currency(data[i][__("Profit %")]) %}</td>
+			{% } else { %}
+				<td>
+					{%= data[i][__("Sales Person")] %}
+				</td>
+				<td style="text-align: right">{%= format_currency(data[i][__("Gross Total")]) %}</td>
+				<td style="text-align: right">{%= format_currency(data[i][__("Discount")]) %}</td>
+				<td style="text-align: right">{%= format_currency(data[i][__("Net Total")]) %}</td>
+				<td style="text-align: right">{%= format_currency(data[i][__("Profit")]) %}</td>
+				<td style="text-align: right">{%= format_currency(data[i][__("Profit %")]) %}</td>
+			{% } %}
+			</tr>
+		{% } %}
+	</tbody>
+</table>
+<p class="text-right text-muted">Printed On {%= dateutil.str_to_user(dateutil.get_datetime_as_string()) %}</p>
