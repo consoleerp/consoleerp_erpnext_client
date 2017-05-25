@@ -164,13 +164,10 @@ def get_conditions(filters, date_field):
 	return " and ".join(conditions), values
 	
 def get_cost_on_date(item_code, warehouse, posting_date):
-	return (frappe.db.sql("""
-		select
-			incoming_rate
-		from
-			`tabStock Ledger Entry`
-		where
-			item_code=%s and warehouse=%s and posting_date<=%s
-			and incoming_rate > 0 limit 1
-	""", (item_code, warehouse, posting_date)) or ((0,),))[0][0]
-	# find a better way to handle nulls
+	from erpnext.stock.stock_ledger import get_previous_sle
+	previous_sle = get_previous_sle({
+				"item_code": item_code,
+				"warehouse": warehouse,
+				"posting_date": posting_date				
+			})
+	return previous_sle.valuation_rate if previous_sle else 0
