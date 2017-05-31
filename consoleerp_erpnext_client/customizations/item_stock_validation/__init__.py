@@ -15,16 +15,16 @@ def validate(self, method):
 	msgs = []
 	for i, d in enumerate(self.items):
 		
-		inf = item_warehouse_info(d.item_code, d.warehouse)		
+		# actual qty is retuned if posting date and time is passed
+		inf = item_warehouse_info(d.item_code, d.warehouse, self.posting_date, self.posting_time)		
 		# is returned not_stock_item when its not
 		if inf == "not_stock_item":
-			continue
-		inf = inf[0] if inf else inf
+			continue		
 					
-		inf_qty = inf.get(qty_string, 0) 		
+		inf_qty = inf or 0		
 		# V8
 		if d.qty > (inf_qty / d.conversion_factor):
-			msg = _("Row: {4} - Not enough stock for {0} in warehouse {1}. {2} is {3}").format(d.item_code, d.warehouse, settings.item_stock_compare_with, inf_qty, i + 1)			
+			msg = _("Row: {4} - Not enough stock for {0} in warehouse {1}. {2} is {3}").format(d.item_code, d.warehouse, "Actual Qty", inf_qty, i + 1)			
 			msgs.append(msg)
 	
 	if msgs:
