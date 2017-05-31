@@ -22,6 +22,6 @@ def item_warehouse_info(item, warehouse=None):
 
 	# actualy_qty -- qty physically present at store (includes qty that is yet to be delivered)
 	if not warehouse:
-		return frappe.db.sql("select warehouse, valuation_rate, (actual_qty - reserved_qty - reserved_qty_for_production) as available_qty, actual_qty, planned_qty, indented_qty, ordered_qty, reserved_qty, reserved_qty_for_production, projected_qty from tabBin where item_code = '"+ item +"';", as_dict=True)
+		return frappe.db.sql("select warehouse, valuation_rate, (actual_qty - reserved_qty - reserved_qty_for_production) as available_qty, actual_qty, planned_qty, indented_qty, ordered_qty, reserved_qty, reserved_qty_for_production, projected_qty from tabBin where item_code = '"+ item +"';", as_dict=True) or {}
 	else:
-		return frappe.db.sql("select valuation_rate, (actual_qty - reserved_qty - reserved_qty_for_production) as available_qty, actual_qty, planned_qty, indented_qty, ordered_qty, reserved_qty, reserved_qty_for_production, projected_qty from tabBin where item_code = '"+ item +"' and warehouse = '"+warehouse+"';", as_dict=True)
+		return frappe.db.sql("select valuation_rate, (actual_qty - reserved_qty - reserved_qty_for_production) as available_qty, actual_qty, planned_qty, indented_qty, ordered_qty, reserved_qty, reserved_qty_for_production, projected_qty from tabBin where item_code = '"+ item +"' and warehouse = '"+warehouse+"';", as_dict=True) or {}
