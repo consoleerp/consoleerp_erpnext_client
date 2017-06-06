@@ -11,6 +11,7 @@ function page_changed(event) {
 	frappe.after_ajax(function() {
 	
 		var route = frappe.get_route();	
+		
 		// backup button
 		if (route[0] === "backups") {
 			// add 'Take backup now' button			
@@ -81,4 +82,10 @@ function page_changed(event) {
 			});
 		}
 	});
+}
+
+
+// call this with an async function
+function sleep_for_ms(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
