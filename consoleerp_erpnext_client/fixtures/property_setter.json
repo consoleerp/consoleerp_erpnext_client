@@ -1,0 +1,19 @@
+[
+ {
+  "_assign": null, 
+  "_comments": null, 
+  "_liked_by": null, 
+  "_user_tags": null, 
+  "default_value": null, 
+  "doc_type": "Sales Invoice Payment", 
+  "docstatus": 0, 
+  "doctype": "Property Setter", 
+  "doctype_or_field": "DocField", 
+  "field_name": "amount", 
+  "modified": "2017-06-04 13:10:20.009679", 
+  "name": "Sales Invoice Payment-amount-depends_on", 
+  "property": "depends_on", 
+  "property_type": "Data", 
+  "value": "eval:(parent.doctype == 'Sales Invoice' || parent.doctype == 'Sales Return')"
+ }
+]

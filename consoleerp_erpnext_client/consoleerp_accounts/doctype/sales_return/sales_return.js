@@ -207,12 +207,9 @@ consoleerp.sales_return = erpnext.selling.SellingController.extend({
 		var paid_amount = (this.frm.doc.party_account_currency == this.frm.doc.currency) ?
 				this.frm.doc.paid_amount : this.frm.doc.base_paid_amount;
 
-		var change_amount = (this.frm.doc.party_account_currency == this.frm.doc.currency) ?
-			this.frm.doc.change_amount : this.frm.doc.base_change_amount;
-
-		// calculate outstanding amount
-		// change_amount is added here
-		this.frm.doc.outstanding_amount =  flt(total_amount_to_pay - flt(paid_amount), precision("outstanding_amount"));
+		// calculate outstanding amount		
+		this.frm.doc.outstanding_amount =  flt(total_amount_to_pay - flt(paid_amount) +
+				flt(this.frm.doc.change_amount * this.frm.doc.conversion_rate), precision("outstanding_amount"));
 		
 		// refresh to update it
 		this.frm.refresh_fields();

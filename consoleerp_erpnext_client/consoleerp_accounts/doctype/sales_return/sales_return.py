@@ -37,12 +37,15 @@ class SalesReturn(SellingController):
 			self.validate_pos()		
 
 		self.set_against_income_account()
-			
+		
+		self.add_remarks()
 		self.validate_item_code()						# simply checks if item code is present
 		self.validate_warehouse()						# checks if warehouse is present for stock item
 		self.update_current_stock()
+		self.validate_write_off_account()
+		self.validate_account_for_change_amount()
 		self.update_packing_list()
-		
+		frappe.db.set(self, 'status', 'Draft')
 	
 	def before_save(self):
 		
@@ -58,7 +61,7 @@ class SalesReturn(SellingController):
 		self.fake_return_for_stock_ledger(0)
 		
 		self.make_gl_entries()
-		
+		frappe.db.set(self, 'status', 'Submitted')
 	
 	def on_cancel(self):
 		self.fake_return_for_stock_ledger(1)
@@ -66,6 +69,7 @@ class SalesReturn(SellingController):
 		self.fake_return_for_stock_ledger(0)
 
 		self.make_gl_entries_on_cancel()
+		frappe.db.set(self, 'status', 'Cancelled')
 	
 	
 	def fake_return_for_stock_ledger(self, fake):
@@ -135,6 +139,19 @@ class SalesReturn(SellingController):
 			frappe.throw(_("At least one mode of payment is required for POS invoice."))
 	
 	
+	def validate_write_off_account(self):
+		if flt(self.write_off_amount) and not self.write_off_account:
+			self.write_off_account = frappe.db.get_value('Company', self.company, 'write_off_account')
+
+		if flt(self.write_off_amount) and not self.write_off_account:
+			msgprint(_("Please enter Write Off Account"), raise_exception=1)
+	
+	
+	def validate_account_for_change_amount(self):
+		if flt(self.change_amount) and not self.account_for_change_amount:
+			msgprint(_("Please enter Account for Change Amount"), raise_exception=1)
+	
+	
 	def set_against_income_account(self):
 		"""Set against account for debit to account"""
 		against_acc = []
@@ -181,6 +198,10 @@ class SalesReturn(SellingController):
 			bin = frappe.db.sql("select actual_qty, projected_qty from `tabBin` where item_code =	%s and warehouse = %s", (d.item_code, d.warehouse), as_dict = 1)
 			d.actual_qty = bin and flt(bin[0]['actual_qty']) or 0
 			d.projected_qty = bin and flt(bin[0]['projected_qty']) or 0
+	
+	
+	def add_remarks(self):
+		if not self.remarks: self.remarks = 'No Remarks'
 	
 	
 	def update_packing_list(self):		

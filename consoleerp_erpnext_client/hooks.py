@@ -115,3 +115,12 @@ scheduler_events = {
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "consoleerp_erpnext_client.event.get_events"
 # }
+fixtures = [{
+		"dt": "Property Setter",
+		"filters": [
+			["name", "in", [
+				"Sales Invoice Payment-amount-depends_on"			# Sales Return
+			]]
+		]
+}]
+
