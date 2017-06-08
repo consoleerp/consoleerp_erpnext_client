@@ -186,6 +186,9 @@ consoleerp.sales_return = erpnext.selling.SellingController.extend({
 		
 		// implement total_advance here					
 		
+		if (!this.frm.doc.write_off_amount)
+			this.frm.doc.write_off_amount = 0
+		
 		frappe.model.round_floats_in(this.frm.doc, ["grand_total"]);
 		if(this.frm.doc.party_account_currency == this.frm.doc.currency) {
 			var total_amount_to_pay = flt(this.frm.doc.grand_total - this.frm.doc.write_off_amount);
