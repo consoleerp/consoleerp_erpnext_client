@@ -101,9 +101,9 @@ class SalesReturn(SellingController):
 				
 		incoming_rate = frappe.db.sql("""select abs(stock_value_difference / actual_qty)
 			from `tabStock Ledger Entry`
-			where item_code = %s and warehouse = %s
+			where item_code = %s and warehouse = %s and posting_date < %s
 			order by posting_date desc limit 1""",
-			(item_code, doc.warehouse))
+			(item_code, doc.warehouse, self.posting_date))
 		incoming_rate = incoming_rate[0][0] if incoming_rate else doc.valuation_rate
 		
 
