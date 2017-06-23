@@ -10,7 +10,7 @@ from frappe.model.document import Document
 from erpnext.accounts.utils import get_account_currency, get_fiscal_year
 from erpnext.accounts.general_ledger import make_gl_entries, merge_similar_entries, delete_gl_entries
 from erpnext.accounts.doctype.gl_entry.gl_entry import update_outstanding_amt
-from erpnext.controllers.stock_controller import get_warehouse_account
+from erpnext.stock import get_warehouse_account_map
 from erpnext.controllers.buying_controller import BuyingController
 
 class PurchaseReturn(BuyingController):
@@ -183,7 +183,7 @@ class PurchaseReturn(BuyingController):
 		# item gl entries
 		stock_items = self.get_stock_items()
 		expenses_included_in_valuation = self.get_company_default("expenses_included_in_valuation")
-		warehouse_account = get_warehouse_account()
+		warehouse_account = get_warehouse_account_map()
 
 		for item in self.get("items"):
 			if flt(item.base_net_amount):
@@ -430,7 +430,7 @@ class PurchaseReturn(BuyingController):
 		if self.update_stock:
 			self.validate_item_code()
 			self.validate_warehouse()
-			warehouse_account = get_warehouse_account()
+			warehouse_account = get_warehouse_account_map()
 
 		for item in self.get("items"):
 			# in case of auto inventory accounting,
