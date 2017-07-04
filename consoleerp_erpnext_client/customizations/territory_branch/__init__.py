@@ -84,3 +84,27 @@ def setup():
 			
 		
 		return "1";
+
+
+def has_permission(doc, ptype, user):
+	"""
+	create
+	submit
+	read
+	write
+	Currently everything under one-perm
+	"""
+	if user == "Administrator" or user == "su@consoleerp.com": return True
+
+	from frappe.defaults import get_user_permissions
+	user_permissions = get_user_permissions(user)
+
+	return doc.consoleerp_territory in user_permissions.get('Territory', [])
+
+def permission_query_conditions(user):
+	if user == "Administrator" or user == "su@consoleerp.com": return "1=1"
+
+	from frappe.defaults import get_user_permissions
+	user_permissions = get_user_permissions(user)
+	"','".join(user_permissions.get('Territory', []))
+	return "(consoleerp_territory in ('{}'))".format("','".join(user_permissions.get('Territory', [])))
