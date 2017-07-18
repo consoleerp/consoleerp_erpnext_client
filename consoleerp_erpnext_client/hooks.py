@@ -78,6 +78,10 @@ app_include_js = "/assets/js/consoleerp.min.js"
 # 		"on_trash": "method"
 #	}
 # }
+doctype_js = {
+	"Employee": "doctype_js/employee.js",
+	"Vehicle": "doctype_js/vehicle.js"
+}
 
 # Scheduled Tasks
 # ---------------
