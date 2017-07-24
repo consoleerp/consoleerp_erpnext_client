@@ -1,9 +1,9 @@
 $(document).on('startup', function(){
 	// on startup
-	if (!frappe.boot.consoleerp)
+	if (!frappe.boot.consoleerp || frappe.get_route()[0] != "")
 		return;
 	
-	if (frappe.boot.consoleerp.expiring_documents) {
+	if (frappe.boot.consoleerp.expiring_documents && frappe.boot.consoleerp.expiring_documents.length > 0) {
 		var rows = frappe.boot.consoleerp.expiring_documents.reduce(function(str, obj){
 			return str 
 			+ "<tr>"
