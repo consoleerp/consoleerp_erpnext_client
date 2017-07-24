@@ -2,17 +2,19 @@ $(document).on('startup', function(){
 	// on startup
 	if (!frappe.boot.consoleerp || frappe.get_route()[0] != "")
 		return;
-	
+
 	if (frappe.boot.consoleerp.expiring_documents && frappe.boot.consoleerp.expiring_documents.length > 0) {
 		var rows = frappe.boot.consoleerp.expiring_documents.reduce(function(str, obj){
-			return str 
+			return str
 			+ "<tr>"
 				+ "<td>"+ obj.doc_no +"</td>"
 				+ "<td>"+ obj.type +"</td>"
 				+ "<td>"+ obj.expiry_date +"</td>"
 				+ "<td>"
 					+ "<a data-parent='"+obj.parent+"' data-parenttype='"+obj.parenttype+"'>"
-						+ obj.parent 
+						+ obj.parenttype
+						+ "-"
+						+ obj.parent
 					+"</a>"
 				+ "</td>"
 			+ "</tr>";
@@ -33,9 +35,12 @@ $(document).on('startup', function(){
 								+ "</tbody>"
 							+ "</table>"
 							+ "<hr>"
-							, "Console ERP Notifications").$wrapper;		
+							, "Console ERP Notifications").$wrapper;
 		$wrapper.find("a").on("click", function(){
 			frappe.set_route("Form", $(this).data("parenttype"), $(this).data("parent"));
 		})
+
+		// show only once
+		//frappe.boot.consoleerp.expiring_documents = null;
 	}
 });
