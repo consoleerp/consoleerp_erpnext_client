@@ -18,6 +18,7 @@ app_license = "MIT"
 # app_include_css = "/assets/consoleerp_erpnext_client/css/consoleerp_erpnext_client.css"
 # app_include_js = "/assets/consoleerp_erpnext_client/js/consoleerp_erpnext_client.js"
 app_include_js = "/assets/js/consoleerp.min.js"
+boot_session = "consoleerp_erpnext_client.boot_session"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/consoleerp_erpnext_client/css/consoleerp_erpnext_client.css"
