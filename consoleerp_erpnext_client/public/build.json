@@ -1,6 +1,7 @@
 {
 	"js/consoleerp.min.js": [
 		"public/js/consoleerp.js",
+		"public/js/toolbar.js",
 		"public/js/notification.js"
 	]
 }
