@@ -79,7 +79,7 @@ def get_conditions(filters):
 		conditions.append("party_type in ('Customer', 'Supplier')")
 		
 	if filters.get("party"):
-		conditions.append("party=%(party)s")
+		conditions.append("party=%(party)s")			
 		
 	from frappe.desk.reportview import build_match_conditions
 	match_conditions = build_match_conditions("GL Entry")
@@ -156,10 +156,11 @@ def get_partywise_gle(filters, gl_entries, gle_map):
 			balance += gle.debit
 			balance -= gle.credit
 			gle["balance"] = balance
-			
-			party_dict.entries.append(gle)
-			party_dict.total_debit += flt(gle.debit, 3)
-			party_dict.total_credit += flt(gle.credit, 3)
+
+			if not (filters.get("hide_balanced_entries") and balance == 0):
+				party_dict.entries.append(gle)
+				party_dict.total_debit += flt(gle.debit, 3)
+				party_dict.total_credit += flt(gle.credit, 3)
 			
 	return gle_map
 	

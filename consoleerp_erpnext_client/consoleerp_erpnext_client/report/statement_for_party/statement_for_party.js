@@ -73,6 +73,12 @@ frappe.query_reports["Statement for Party"] = {
 			"label": __("Summary Report"),
 			"fieldtype": "Check",
 			"default": 1
+		},
+		{
+			"fieldname":"hide_balanced_entries",
+			"label": __("Hide balanced entries"),
+			"fieldtype": "Check",
+			"default": 0			
 		}
 	]
 }
