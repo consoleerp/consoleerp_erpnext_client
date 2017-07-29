@@ -40,9 +40,7 @@
 						{%= data[i][__("Party")] || data[i][__("Account")] %}
 						<br>
 					{% } %}
-
-					{{ __("Against") }}: {%= data[i][__("Against Account")] %}
-					<br>{%= __("Remarks") %}: {%= data[i][__("Remarks")] %}</td>
+					{%= __("Remarks") %}: {%= data[i][__("Remarks")] %}</td>
 				<td style="text-align: right">{%= format_currency(data[i][__("Debit")]) %}</td>
 				<td style="text-align: right">{%= format_currency(data[i][__("Credit")]) %}</td>
 				<td style="text-align: right">{%= format_currency(data[i][__("Balance")]) %}</td>
