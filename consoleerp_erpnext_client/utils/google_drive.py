@@ -12,7 +12,6 @@ from oauth2client.file import Storage
 from frappe.utils import update_progress_bar
 
 SCOPES = 'https://www.googleapis.com/auth/drive.file'
-CLIENT_SECRET_FILE = '/home/consoleadmin/consoleerp/google_drive/client_secret.json'
 APPLICATION_NAME = 'Console ERP Data Backup'
 
 def upload_backup():
@@ -147,6 +146,7 @@ def get_credentials():
 	# details are always stored here, not on Github
 	drive_dir = os.path.join(home_dir, 'consoleerp/google_drive')	
 	credential_path = os.path.join(drive_dir, 'drive-consoleerp.json')
+	client_secret_path = os.path.join(drive_dir, 'client_secret.json')
 	
 	store = Storage(credential_path)
 	credentials = store.get()
@@ -155,7 +155,7 @@ def get_credentials():
 		import argparse		
 		flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args('--auth_host_name localhost --logging_level INFO --noauth_local_webserver'.split())		
 		
-		flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
+		flow = client.flow_from_clientsecrets(client_secret_path, SCOPES)
 		flow.user_agent = APPLICATION_NAME
 		credentials = tools.run_flow(flow, store, flags)
 	return credentials
