@@ -127,7 +127,7 @@ def download_latest_client_backup():
 			os.path.basename(os.path.normpath(frappe.get_site_path())),
 			[os.path.join(sitepath, x.get("name")) for x in backup_files["files"] if "database" in x.get("name")][0], 
 			[os.path.join(sitepath, x.get("name")) for x in backup_files["files"] if not "database" in x.get("name") and not "private" in x.get("name")][0],
-			[os.path.join(sitepath, x.get("name")) for x in backup_files["files"] if "private_files" in x.get("name")][0]))
+			[os.path.join(sitepath, x.get("name")) for x in backup_files["files"] if "private" in x.get("name")][0]))
 	print()
 	print("rm -rf sites{}".format(sitepath[1:]))
 	print()
