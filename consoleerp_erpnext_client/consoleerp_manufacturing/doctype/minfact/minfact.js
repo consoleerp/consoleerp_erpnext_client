@@ -3,9 +3,6 @@
 
 frappe.provide("consoleerp.manufacturing");
 
-// FROM buying.js
-cur_frm.cscript.tax_table = "Purchase Taxes and Charges";
-{% include 'erpnext/accounts/doctype/purchase_taxes_and_charges_template/purchase_taxes_and_charges_template.js' %}
 
 frappe.ui.form.on("MinFact", {
 	production_item: function(frm) {
@@ -13,18 +10,17 @@ frappe.ui.form.on("MinFact", {
 	}
 });
 
-consoleerp.manufacturing.MinFactController = erpnext.TransactionController.extend({
+consoleerp.manufacturing.MinFactController = erpnext.stock.StockController.extend({
 	setup: function(doc) {
 		this.setup_posting_date_time_check();
 		// TODO
-		// warehouse queries: company. refer production order
-		
+		// warehouse queries: company. refer production order		
 		// Set query for BOM
 		this.frm.set_query("bom_no", function() {
-			if (frm.doc.production_item) {
+			if (cur_frm.doc.production_item) {
 				return{
 					query: "erpnext.controllers.queries.bom",
-					filters: {item: cstr(frm.doc.production_item)}
+					filters: {item: cstr(cur_frm.doc.production_item)}
 				}
 			} else msgprint(__("Please enter Production Item first"));
 		});
@@ -32,7 +28,7 @@ consoleerp.manufacturing.MinFactController = erpnext.TransactionController.exten
 		// Set query for FG Item
 		this.frm.set_query("production_item", function() {
 			// return erpnext.queries.item({is_stock_item: 1});
-			if (doc.purpose == "Subcontract") 
+			if (cur_frm.doc.purpose == "Subcontract") 
 				return {
 					query: "erpnext.controllers.queries.item_query",
 					filters:{
@@ -47,7 +43,6 @@ consoleerp.manufacturing.MinFactController = erpnext.TransactionController.exten
 					}
 				}
 		});
-		this._super(doc);
 	},
 	refresh: function() {
 		// erpnext/erpnext/public/js/utils.js
@@ -62,9 +57,12 @@ consoleerp.manufacturing.MinFactController = erpnext.TransactionController.exten
 		// stock_controller.js
 		// shows the "Stock Ledger" Button
 		this.show_stock_ledger();
-		if (cint(frappe.defaults.get_default("auto_accounting_for_stock")) && cur_frm.doc.purpose == "Subcontract") {
+		if (cint(frappe.defaults.get_default("auto_accounting_for_stock"))) {
 			this.show_general_ledger();
 		}
+	},
+	production_item: function() {		
+		this.frm.set_value("qty", 1);
 	},
 	rate: function() {
 		this.re_calculate();
@@ -73,10 +71,27 @@ consoleerp.manufacturing.MinFactController = erpnext.TransactionController.exten
 		this.re_calculate();
 	},
 	re_calculate: function() {
-		if (this.frm.doc.purpose == "Subcontract") {
-			this.frm.set_value("total", this.frm.doc.rate * this.frm.doc.qty);
-			this.calculate_taxes_and_totals();
+		if (cur_frm.doc.purpose == "Subcontract") {
+			cur_frm.set_value("total", this.frm.doc.rate * this.frm.doc.qty);
 		}
+	},
+	supplier: function() {
+		
+	},
+	bom_no: function(frm) {
+		this.fetch_raw_materials(frm);
+	},
+	fetch_raw_materials: function(frm) {
+		return cur_frm.call({
+			doc: cur_frm.doc,
+			method: "get_items_from_bom",
+			freeze: true,
+			callback: function(r) {
+				if(r.message["set_scrap_wh_mandatory"]){
+					frm.toggle_reqd("scrap_warehouse", true);
+				}
+			}
+		});
 	}
 });
 $.extend(cur_frm.cscript, new consoleerp.manufacturing.MinFactController({frm: cur_frm}));
