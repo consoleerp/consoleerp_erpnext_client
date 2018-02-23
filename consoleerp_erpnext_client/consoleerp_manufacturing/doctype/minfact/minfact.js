@@ -6,8 +6,6 @@ frappe.provide("consoleerp.manufacturing");
 
 frappe.ui.form.on("MinFact", {
 	validate: function(frm) {
-		if (frm.doc.purpose == "Subcontract")
-			frm.doc.warehouse = frm.doc.supplier_warehouse;
 	},
 	production_item: function(frm) {
 		var doc = frm.doc;
@@ -27,12 +25,9 @@ frappe.ui.form.on("MinFact", {
 	},
 	purpose: function(frm) {
 		frm.toggle_reqd("supplier", frm.doc.purpose == "Subcontract");
-		frm.toggle_reqd("supplier_warehouse", frm.doc.purpose == "Subcontract");
 		frm.toggle_reqd("production_rate", frm.doc.purpose == "Subcontract");
 		frm.toggle_reqd("credit_to", frm.doc.purpose == "Subcontract");
 		
-		// manufacturing
-		frm.toggle_reqd("warehouse", frm.doc.purpose == "Manufacture");
 	},
 	is_paid: function(frm) {
 		frm.toggle_reqd("cash_bank_account", frm.doc.is_paid);
@@ -117,6 +112,9 @@ consoleerp.manufacturing.MinFactController = erpnext.TransactionController.exten
 			}
 		});
 	},
+	apply_rate_on: function() {
+		this.calculate_taxes_and_totals();
+	},
 	additional_cost: function() {
 		this.calculate_taxes_and_totals();
 	},
@@ -128,7 +126,17 @@ consoleerp.manufacturing.MinFactController = erpnext.TransactionController.exten
 	},
 	calculate_taxes_and_totals: function() {
 		if (this.frm.doc.purpose == "Subcontract") {
-			this.frm.set_value("total", this.frm.doc.production_rate * this.frm.doc.qty + (this.frm.doc.additional_cost || 0));
+			var me = this;
+			var total = 0;
+			if (this.frm.doc.apply_rate_on == "Production Qty")
+				total = this.frm.doc.production_rate * this.frm.doc.qty;
+			else if (this.frm.doc.apply_rate_on == "Total Raw Material Qty")
+				$.each(this.frm.doc.items, function(i, obj) {
+					total += (obj.qty || 0) * me.frm.doc.production_rate;
+				});
+
+			total += (this.frm.doc.additional_cost || 0);
+			this.frm.set_value("total", total);
 			
 			var total_tax = 0;
 			for (var tax in this.frm.taxes) {

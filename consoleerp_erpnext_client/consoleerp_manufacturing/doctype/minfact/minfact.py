@@ -43,13 +43,15 @@ class MinFact(StockController):
 			self.taxes = []
 			self.production_rate = 0
 		
-			
-	def get_target_warehouse(self):
-		return self.warehouse if self.purpose == "Manufacture" else self.supplier_warehouse
-		
 	def calculate(self):		
-			
-		self.total = flt(self.production_rate * self.qty + self.additional_cost, self.precision("total"))
+		
+		self.total = 0
+		if self.apply_rate_on == "Production Qty":
+			self.total = flt(self.production_rate * self.qty + self.additional_cost, self.precision("total"))
+		elif self.apply_rate_on == "Total Raw Material Qty":
+			for item in self.items:
+				self.total += (item.qty or 0) * self.production_rate
+		
 		total_tax = 0
 		
 		for tax in self.taxes:
