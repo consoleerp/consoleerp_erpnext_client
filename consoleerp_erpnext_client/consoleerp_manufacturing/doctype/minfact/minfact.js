@@ -97,6 +97,8 @@ consoleerp.manufacturing.MinFactController = erpnext.TransactionController.exten
 		this._super()
 	},
 	supplier: function() {
+		if (!this.frm.doc.supplier)
+			return;
 		var me = this;
 		return frappe.call({
 			method: "erpnext.accounts.party.get_party_account",
@@ -156,6 +158,8 @@ consoleerp.manufacturing.MinFactController = erpnext.TransactionController.exten
 		this.fetch_raw_materials(frm);
 	},
 	fetch_raw_materials: function(frm) {
+		if (!this.frm.doc.bom_no)
+			return;
 		return cur_frm.call({
 			doc: cur_frm.doc,
 			method: "get_items_from_bom",
