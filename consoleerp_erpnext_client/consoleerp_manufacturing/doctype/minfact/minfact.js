@@ -141,11 +141,11 @@ consoleerp.manufacturing.MinFactController = erpnext.TransactionController.exten
 			this.frm.set_value("total", total);
 			
 			var total_tax = 0;
-			for (var tax in this.frm.taxes) {
+			$.each(this.frm.doc.taxes, (i, tax) => {
 				if (tax.rate) {
 					total_tax += flt(tax.rate * this.frm.doc.total / 100, precision("total_taxes_and_charges"));
 				}
-			}
+			});
 			this.frm.set_value("total_taxes_and_charges", total_tax);
 			this.frm.set_value("grand_total", this.frm.doc.total_taxes_and_charges + this.frm.doc.total);
 			
