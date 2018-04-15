@@ -5,15 +5,15 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
-from frappe.utils import cint, flt
+from frappe.utils import cint, flt, cstr
 from erpnext.accounts.party import get_party_account, get_due_date
 from erpnext.controllers.stock_controller import update_gl_entries_after
 from erpnext.accounts.utils import get_account_currency
 from erpnext.accounts.doctype.sales_invoice.pos import update_multi_mode_option
 from frappe.model.document import Document
-from erpnext.controllers.selling_controller import SellingController
+from erpnext.controllers.stock_controller import StockController
 
-class SalesReturn(SellingController):
+class SalesReturn(StockController):
 	
 	"""
 	get_incoming_rate_for_sales_return
@@ -21,15 +21,10 @@ class SalesReturn(SellingController):
 	"""
 	
 	def validate(self):
-		for tax in self.get('taxes'):
-			tax.category = "something"
-			tax.add_deduct_tax = "something"			
-	
-		super(SalesReturn, self).validate()
+
 		self.validate_posting_time()										# auto sets posting date and time to now		
-		self.validate_uom_is_integer("stock_uom", "qty")					# checks for whole number UOMs and verify the qtys
+		self.validate_uom_is_integer("stock_uom", "qty")					# checks for whole number UOMs and verify the qtys	# TransactionBase
 		self.validate_debit_to_acc()										# debit_to validation
-		# todo: fixed asset check
 		
 		self.validate_income_rates()
 		
@@ -42,19 +37,13 @@ class SalesReturn(SellingController):
 		self.validate_item_code()						# simply checks if item code is present
 		self.validate_warehouse()						# checks if warehouse is present for stock item
 		self.update_current_stock()
-		self.validate_write_off_account()
-		self.validate_account_for_change_amount()
+		
 		self.update_packing_list()
 		frappe.db.set(self, 'status', 'Draft')
-	
-	def before_save(self):
 		
-		set_account_for_mode_of_payment(self)
-	
+		self.calculate_taxes_and_totals()
 	
 	def on_submit(self):
-		self.validate_pos_paid_amount()
-		self.clear_unallocated_mode_of_payments()
 		
 		self.fake_return_for_stock_ledger(1)
 		self.update_stock_ledger()				# always update_stock
@@ -70,7 +59,116 @@ class SalesReturn(SellingController):
 
 		self.make_gl_entries_on_cancel()
 		frappe.db.set(self, 'status', 'Cancelled')
+		
 	
+	def calculate_taxes_and_totals(self):
+		total = 0;
+		
+		for item in self.items:
+			item.amount = flt(item.rate * item.qty, self.precision("amount", item))
+			item.net_amount = item.amount
+			item.net_rate = item.rate
+			total += item.amount
+			
+			self._set_in_company_currency(item, ['amount', 'rate', 'net_amount', 'net_rate'])
+	
+		self.total = total
+		
+		# only supports discount amount for now
+		if self.discount_amount:
+			net_total = total - self.discount_amount
+			for item in self.items:
+				item.net_amount = flt(item.amount * net_total / total, self.precision('net_amount', item))
+				item.net_rate = flt(item.net_amount / item.qty, self.precision('net_rate', item))
+				self._set_in_company_currency(item, ['net_amount', 'net_rate'])
+			
+			self.net_total = net_total
+		else:
+			self.net_total = total
+			
+		# taxes
+		total_tax = 0
+		for tax in self.taxes:
+			if tax.rate:
+				tax_amount = flt(tax.rate * self.total / 100, self.precision("total_taxes_and_charges"))
+				tax.tax_amount = tax_amount
+				tax.tax_amount_after_discount_amount = tax.tax_amount
+				total_tax += tax_amount
+				tax.total = self.total + total_tax
+				
+				self._set_in_company_currency(tax, ["tax_amount", "tax_amount_after_discount_amount"])
+		
+		self.total_taxes_and_charges = flt(total_tax, self.precision("total_taxes_and_charges"))
+		self.grand_total = flt(self.total_taxes_and_charges + self.net_total, self.precision("grand_total"))
+		
+		self._set_in_company_currency(self, ["total", "total_taxes_and_charges", "grand_total", "net_total"])
+		
+		from frappe.utils import money_in_words
+		self.in_words = money_in_words(self.grand_total, self.currency)
+		
+	def _set_in_company_currency(self, doc, fields):
+		"""set values in base currency"""
+		for f in fields:
+			val = flt(flt(doc.get(f), doc.precision(f)) * self.conversion_rate, doc.precision("base_" + f))
+			doc.set("base_" + f, val)
+	
+	def update_stock_ledger(self):
+
+		sl_entries = []
+		for d in self.get_item_list():
+			if frappe.db.get_value("Item", d.item_code, "is_stock_item") == 1 and flt(d.qty):
+				if flt(d.conversion_factor)==0.0:
+					d.conversion_factor = get_conversion_factor(d.item_code, d.uom).get("conversion_factor") or 1.0
+				return_rate = 0
+				if cint(self.is_return) and self.return_against and self.docstatus==1:
+					return_rate = self.get_incoming_rate_for_sales_return(d.item_code, self.return_against)
+
+				# On cancellation or if return entry submission, make stock ledger entry for
+				# target warehouse first, to update serial no values properly
+
+				if d.warehouse and ((not cint(self.is_return) and self.docstatus==1)
+					or (cint(self.is_return) and self.docstatus==2)):
+						sl_entries.append(self.get_sl_entries(d, {
+							"actual_qty": -1*flt(d.qty),
+							"incoming_rate": return_rate
+						}))
+
+				if d.target_warehouse:
+					target_warehouse_sle = self.get_sl_entries(d, {
+						"actual_qty": flt(d.qty),
+						"warehouse": d.target_warehouse
+					})
+
+					if self.docstatus == 1:
+						if not cint(self.is_return):
+							args = frappe._dict({
+								"item_code": d.item_code,
+								"warehouse": d.warehouse,
+								"posting_date": self.posting_date,
+								"posting_time": self.posting_time,
+								"qty": -1*flt(d.qty),
+								"serial_no": d.serial_no,
+								"company": d.company,
+								"voucher_type": d.voucher_type,
+								"voucher_no": d.name,
+								"allow_zero_valuation": d.allow_zero_valuation
+							})
+							target_warehouse_sle.update({
+								"incoming_rate": get_incoming_rate(args)
+							})
+						else:
+							target_warehouse_sle.update({
+								"outgoing_rate": return_rate
+							})
+					sl_entries.append(target_warehouse_sle)
+
+				if d.warehouse and ((not cint(self.is_return) and self.docstatus==2)
+					or (cint(self.is_return) and self.docstatus==1)):
+						sl_entries.append(self.get_sl_entries(d, {
+							"actual_qty": -1*flt(d.qty),
+							"incoming_rate": return_rate
+						}))
+		self.make_sl_entries(sl_entries)
 	
 	def fake_return_for_stock_ledger(self, fake):
 		self.is_return = fake
@@ -134,11 +232,8 @@ class SalesReturn(SellingController):
 					frappe.throw(_("Valuation Rate is mandatory for Row {0}".format(d.idx)))
 	
 	
-	def validate_pos_paid_amount(self):
-		if len(self.payments) == 0 and self.is_pos:
-			frappe.throw(_("At least one mode of payment is required for POS invoice."))
-	
-	
+	# Write Off
+	"""
 	def validate_write_off_account(self):
 		if flt(self.write_off_amount) and not self.write_off_account:
 			self.write_off_account = frappe.db.get_value('Company', self.company, 'write_off_account')
@@ -150,7 +245,7 @@ class SalesReturn(SellingController):
 	def validate_account_for_change_amount(self):
 		if flt(self.change_amount) and not self.account_for_change_amount:
 			msgprint(_("Please enter Account for Change Amount"), raise_exception=1)
-	
+	"""
 	
 	def set_against_income_account(self):
 		"""Set against account for debit to account"""
@@ -169,10 +264,8 @@ class SalesReturn(SellingController):
 
 			
 	def validate_pos(self):	
-		
-		if flt(self.paid_amount) + flt(self.write_off_amount) - flt(self.grand_total) < \
-				1/(10**(self.precision("grand_total") + 1)):
-				frappe.throw(_("Paid amount can not be greater than Grand Total"))
+		if not self.cash_bank_account:
+			frappe.throw("Cash Bank Account is necessary")
 				
 	def validate_item_code(self):
 		for d in self.get('items'):
@@ -204,10 +297,54 @@ class SalesReturn(SellingController):
 		if not self.remarks: self.remarks = 'No Remarks'
 	
 	
+	def get_item_list(self):
+		il = []
+		for d in self.get("items"):
+			if d.qty is None:
+				frappe.throw(_("Row {0}: Qty is mandatory").format(d.idx))
+
+			if self.has_product_bundle(d.item_code):
+				for p in self.get("packed_items"):
+					if p.parent_detail_docname == d.name and p.parent_item == d.item_code:
+						# the packing details table's qty is already multiplied with parent's qty
+						il.append(frappe._dict({
+							'warehouse': p.warehouse or d.warehouse,
+							'item_code': p.item_code,
+							'qty': flt(p.qty),
+							'uom': p.uom,
+							'batch_no': cstr(p.batch_no).strip(),
+							'serial_no': cstr(p.serial_no).strip(),
+							'name': d.name,
+							'target_warehouse': p.target_warehouse,
+							'company': self.company,
+							'voucher_type': self.doctype,
+							'allow_zero_valuation': 0 # d.allow_zero_valuation_rate
+						}))
+			else:
+				il.append(frappe._dict({
+					'warehouse': d.warehouse,
+					'item_code': d.item_code,
+					'qty': d.stock_qty,
+					'uom': d.uom,
+					'stock_uom': d.stock_uom,
+					'conversion_factor': d.conversion_factor,
+					'batch_no': cstr(d.get("batch_no")).strip(),
+					'serial_no': cstr(d.get("serial_no")).strip(),
+					'name': d.name,
+					'target_warehouse': d.target_warehouse,
+					'company': self.company,
+					'voucher_type': self.doctype,
+					'allow_zero_valuation': 0 # d.allow_zero_valuation_rate
+				}))
+		return il
+	
 	def update_packing_list(self):		
 		from erpnext.stock.doctype.packed_item.packed_item import make_packing_list
 		make_packing_list(self)
 	
+	def has_product_bundle(self, item_code):
+		return frappe.db.sql("""select name from `tabProduct Bundle`
+			where new_item_code=%s and docstatus != 2""", item_code)
 	
 	def validate_debit_to_acc(self):
 		account = frappe.db.get_value("Account", self.debit_to,
@@ -227,74 +364,8 @@ class SalesReturn(SellingController):
 	
 	# sales_invoice.py
 	def set_missing_values(self, for_validate=False):
-		pos = self.set_pos_fields(for_validate)
-
 		if not self.debit_to:
 			self.debit_to = get_party_account("Customer", self.customer, self.company)
-			
-		""" No due date for now
-		if not self.due_date and self.customer:
-			self.due_date = get_due_date(self.posting_date, "Customer", self.customer, self.company)
-		"""
-		
-		super(SalesReturn, self).set_missing_values(for_validate)
-
-		if pos:
-			return {"print_format": pos.get("print_format") }
-	
-	
-	# sales_invoice.py
-	def set_pos_fields(self, for_validate=False):
-		"""Set retail related fields from POS Profiles"""
-		if cint(self.is_pos) != 1:
-			return
-
-		from erpnext.stock.get_item_details import get_pos_profile_item_details, get_pos_profile
-		pos = get_pos_profile(self.company)
-
-		if not self.get('payments') and not for_validate:
-			pos_profile = frappe.get_doc('POS Profile', pos.name) if pos else None
-			update_multi_mode_option(self, pos_profile)
-
-		if not self.account_for_change_amount:
-			self.account_for_change_amount = frappe.db.get_value('Company', self.company, 'default_cash_account')
-
-		if pos:
-			if not for_validate and not self.customer:
-				self.customer = pos.customer
-				self.mode_of_payment = pos.mode_of_payment
-				# self.set_customer_defaults()
-
-			if pos.get('account_for_change_amount'):
-				self.account_for_change_amount = pos.get('account_for_change_amount')
-
-			for fieldname in ('territory', 'naming_series', 'currency', 'taxes_and_charges', 'letter_head', 'tc_name',
-				'selling_price_list', 'company', 'select_print_heading', 'cash_bank_account',
-				'write_off_account', 'write_off_cost_center'):
-					if (not for_validate) or (for_validate and not self.get(fieldname)):
-						self.set(fieldname, pos.get(fieldname))
-
-			if not for_validate:
-				self.update_stock = cint(pos.get("update_stock"))
-
-			# set pos values in items
-			for item in self.get("items"):
-				if item.get('item_code'):
-					for fname, val in get_pos_profile_item_details(pos,
-						frappe._dict(item.as_dict()), pos).items():
-
-						if (not for_validate) or (for_validate and not item.get(fname)):
-							item.set(fname, val)
-
-			# fetch terms
-			if self.tc_name and not self.terms:
-				self.terms = frappe.db.get_value("Terms and Conditions", self.tc_name, "terms")
-
-			# fetch charges
-			if self.taxes_and_charges and not len(self.get("taxes")):
-				self.set_taxes()
-
-		return pos
 		
 		
 	def make_gl_entries(self, gl_entries=None, repost_future_gle=True, from_repost=False):
@@ -308,8 +379,10 @@ class SalesReturn(SellingController):
 			from erpnext.accounts.general_ledger import make_gl_entries
 
 			# if POS and amount is written off, updating outstanding amt after posting all gl entries
-			update_outstanding = "No" if (cint(self.is_pos) or self.write_off_account) else "Yes"
-
+			update_outstanding = "No" if (cint(self.is_pos)) else "Yes"
+			import json
+			print("GLLIST JSON:")
+			# print(json.dumps(gl_entries))
 			make_gl_entries(gl_entries, cancel=(self.docstatus == 2),
 				update_outstanding=update_outstanding, merge_entries=False)
 
@@ -345,9 +418,9 @@ class SalesReturn(SellingController):
 
 		self.make_pos_gl_entries(gl_entries)
 				
-		self.make_gle_for_change_amount(gl_entries)
+		# self.make_gle_for_change_amount(gl_entries)
 
-		self.make_write_off_gl_entry(gl_entries)
+		# self.make_write_off_gl_entry(gl_entries)
 
 		# process for return
 		for gl in gl_entries:
@@ -446,35 +519,32 @@ class SalesReturn(SellingController):
 			
 	def make_pos_gl_entries(self, gl_entries):
 		if cint(self.is_pos):
-			for payment_mode in self.payments:
-				if payment_mode.amount:
-					# POS, make payment entries
-					gl_entries.append(
-						self.get_gl_dict({
-							"account": self.debit_to,
-							"party_type": "Customer",
-							"party": self.customer,
-							"against": payment_mode.account,
-							"credit": payment_mode.base_amount,
-							"credit_in_account_currency": payment_mode.base_amount \
-								if self.party_account_currency==self.company_currency \
-								else payment_mode.amount,
-							"against_voucher": self.name,
-							"against_voucher_type": self.doctype,
-						}, self.party_account_currency)
-					)
+			gl_entries.append(
+				self.get_gl_dict({
+					"account": self.debit_to,
+					"party_type": "Customer",
+					"party": self.customer,
+					"against": self.cash_bank_account,
+					"credit": self.base_grand_total,
+					"credit_in_account_currency": self.base_grand_total \
+						if self.party_account_currency==self.company_currency \
+						else self.grand_total,
+					"against_voucher": self.name,
+					"against_voucher_type": self.doctype,
+				}, self.party_account_currency)
+			)
 
-					payment_mode_account_currency = get_account_currency(payment_mode.account)
-					gl_entries.append(
-						self.get_gl_dict({
-							"account": payment_mode.account,
-							"against": self.customer,
-							"debit": payment_mode.base_amount,
-							"debit_in_account_currency": payment_mode.base_amount \
-								if payment_mode_account_currency==self.company_currency \
-								else payment_mode.amount
-						}, payment_mode_account_currency)
-					)
+			payment_mode_account_currency = get_account_currency(self.cash_bank_account)
+			gl_entries.append(
+				self.get_gl_dict({
+					"account": self.cash_bank_account,
+					"against": self.customer,
+					"debit": self.base_grand_total,
+					"debit_in_account_currency": self.base_grand_total \
+						if payment_mode_account_currency==self.company_currency \
+						else self.grand_total
+				}, payment_mode_account_currency)
+			)
 					
 					
 	def make_gle_for_change_amount(self, gl_entries):
@@ -534,9 +604,3 @@ class SalesReturn(SellingController):
 					"cost_center": self.write_off_cost_center or default_cost_center
 				}, write_off_account_currency)
 			)
-	
-	
-def set_account_for_mode_of_payment(self):
-	for data in self.payments:
-		if not data.account:
-			data.account = get_bank_cash_account(data.mode_of_payment, self.company).get("account")

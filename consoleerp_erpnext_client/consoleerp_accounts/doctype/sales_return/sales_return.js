@@ -8,17 +8,8 @@
 // change amount
 // I have mentioned some of the fieldnames in places where they should be included
 
-frappe.ui.form.on('Sales Return', {
-	setup: function(frm) {		
-		$.extend(cur_frm.cscript, new consoleerp.sales_return({frm:frm}));
-	}
-});
-
-
-{% include 'erpnext/selling/sales_common.js' %};
-
 frappe.provide("consoleerp");
-consoleerp.sales_return = erpnext.selling.SellingController.extend({
+consoleerp.sales_return = erpnext.TransactionController.extend({
 	setup: function() {
 		
 		// defined in StockController.js
@@ -55,6 +46,7 @@ consoleerp.sales_return = erpnext.selling.SellingController.extend({
 				filters: {'is_sales_item': 1}
 			}
 		});
+		
 		
 		// Income Account in Details Table
 		// --------------------------------------
@@ -94,14 +86,52 @@ consoleerp.sales_return = erpnext.selling.SellingController.extend({
 		// Outstanding Amount
 		// This is left out by calculate_taxes_and_totals() function since this is not an Invoice for it
 		// Have to call calculate outstanding amount each time it is changed
-			
+		this._super();
 	},
 	
 	// Override the taxes_and_totals method, call the _super(), 
 	// calculate outstanding amount
-	calculate_taxes_and_totals: function() {					
-		this._super();
-		this.calculate_outstanding_amount(true);
+	calculate_taxes_and_totals: function() {
+		
+		var me = this;
+		var total = 0;
+
+		$.each(this.frm.doc.items, function(i, obj) {
+			obj.amount = flt((obj.qty || 0) * (obj.rate || 0), precision('amount', obj))
+			obj.net_amount = obj.amount;
+			obj.net_rate = obj.rate;
+			total += obj.amount;
+		});
+
+		this.frm.set_value("total", total);
+		
+		// discount_amount
+		if (this.frm.doc.discount_amount) {
+			let discount_amount = this.frm.doc.discount_amount;
+			let net_total = total - discount_amount;
+			$.each(this.frm.doc.items, function(i, obj) {
+				obj.net_amount = flt(obj.amount * net_total / total, precision('net_amount', obj));
+				obj.net_rate = flt(obj.net_amount / obj.qty, precision('net_rate', obj));
+			});
+			this.frm.set_value("net_total", net_total);
+		} else {
+			this.frm.set_value("net_total", total);
+		}
+		
+		var total_tax = 0;
+		$.each(this.frm.doc.taxes, (i, tax) => {
+			if (tax.rate) {
+				total_tax += flt(tax.rate * this.frm.doc.total / 100, precision("total_taxes_and_charges"));
+			}
+		});
+
+		this.frm.set_value("total_taxes_and_charges", total_tax);
+		this.frm.set_value("grand_total", this.frm.doc.total_taxes_and_charges + this.frm.doc.net_total);
+		
+		this.set_in_company_currency(this.frm.doc, ["total_taxes_and_charges", "grand_total", "total", "net_total"]);
+		
+		// refresh to update it
+		this.frm.refresh_fields();
 	},
 		
 	
@@ -152,6 +182,7 @@ consoleerp.sales_return = erpnext.selling.SellingController.extend({
 	// Is Pos
 	// --------------------------------------------------
 	is_pos: function(frm){
+		this.frm.toggle_reqd("cash_bank_account", this.frm.doc.is_pos);
 		if(this.frm.doc.is_pos) {
 			if(!this.frm.doc.company) {
 				this.frm.set_value("is_pos", 0);
@@ -176,43 +207,6 @@ consoleerp.sales_return = erpnext.selling.SellingController.extend({
 			}
 		}
 		else this.frm.trigger("refresh")
-	},
-	
-	
-	calculate_outstanding_amount: function(update_paid_amount) {
-		//
-		// referenced from taxes_and_totals.js
-		// It allows only Sales & Purchase Invoices to calc outstanding amount
-		
-		// implement total_advance here					
-		
-		if (!this.frm.doc.write_off_amount)
-			this.frm.doc.write_off_amount = 0
-		
-		frappe.model.round_floats_in(this.frm.doc, ["grand_total"]);
-		if(this.frm.doc.party_account_currency == this.frm.doc.currency) {
-			var total_amount_to_pay = flt(this.frm.doc.grand_total - this.frm.doc.write_off_amount);
-		} else {
-			var total_amount_to_pay = flt(flt(this.frm.doc.grand_total*this.frm.doc.conversion_rate, precision("grand_total"))
-						- this.frm.doc.write_off_amount, precision("base_grand_total"));							
-		}
-				
-		// If update_paid_amount
-		// 		grand total is completely paid in the first payment method		
-		this.set_default_payment(total_amount_to_pay, update_paid_amount);
-		
-		// simply sums the payments
-		this.calculate_paid_amount();
-		
-		var paid_amount = (this.frm.doc.party_account_currency == this.frm.doc.currency) ?
-				this.frm.doc.paid_amount : this.frm.doc.base_paid_amount;
-
-		// calculate outstanding amount		
-		this.frm.doc.outstanding_amount =  flt(total_amount_to_pay - flt(paid_amount) +
-				flt(this.frm.doc.change_amount * this.frm.doc.conversion_rate), precision("outstanding_amount"));
-		
-		// refresh to update it
-		this.frm.refresh_fields();
 	},
 
 	
@@ -280,20 +274,17 @@ consoleerp.sales_return = erpnext.selling.SellingController.extend({
 	// Accounting
 	// ---------------------------------------------------------------
 	
-	// mode of payment amount	
-	amount: function() {
-		this.calculate_outstanding_amount(false);
-		this.write_off_outstanding_amount_automatically();
+	discount_amount: function() {
+		this.calculate_taxes_and_totals();
 	},
 	
-	
 	tax_amount: function() {
-			this.calculate_taxes_and_totals();
+		this.calculate_taxes_and_totals();
 	},
 	
 	
 	rate: function() {
-			this.calculate_taxes_and_totals();
+		this.calculate_taxes_and_totals();
 	},
 	
 	
@@ -306,29 +297,6 @@ consoleerp.sales_return = erpnext.selling.SellingController.extend({
 		}
 
 		this.frm.refresh_fields();
-	},
-	
-	
-	write_off_outstanding_amount_automatically: function() {
-		if(cint(this.frm.doc.write_off_outstanding_amount_automatically)) {
-			frappe.model.round_floats_in(this.frm.doc, ["grand_total", "paid_amount"]);
-			// this will make outstanding amount 0
-			this.frm.set_value("write_off_amount",
-				flt(this.frm.doc.grand_total - this.frm.doc.paid_amount - this.frm.doc.total_advance, precision("write_off_amount"))
-			);
-			this.frm.toggle_enable("write_off_amount", false);
-
-		} else {
-			this.frm.toggle_enable("write_off_amount", true);
-		}
-
-		this.calculate_outstanding_amount(false);
-		this.frm.refresh_fields();
-	},
-
-	write_off_amount: function() {
-		this.set_in_company_currency(this.frm.doc, ["write_off_amount"]);
-		this.write_off_outstanding_amount_automatically();
 	},
 	
 	
@@ -373,11 +341,12 @@ consoleerp.sales_return = erpnext.selling.SellingController.extend({
 		if (frappe.boot.sysdefaults.country == 'India') unhide_field(['c_form_applicable', 'c_form_no']);
 		else hide_field(['c_form_applicable', 'c_form_no']);
 
-		this.frm.toggle_enable("write_off_amount", !!!cint(doc.write_off_outstanding_amount_automatically));
-
 		this.frm.refresh_fields();
 	}
 	
 });
+
+
+$.extend(cur_frm.cscript, new consoleerp.sales_return({frm: cur_frm}));
 
 // ============================s
