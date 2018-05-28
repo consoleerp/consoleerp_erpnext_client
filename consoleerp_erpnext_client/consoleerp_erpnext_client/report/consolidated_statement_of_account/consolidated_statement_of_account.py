@@ -54,33 +54,35 @@ def get_gl_entries(filters):
 	posting_date >= from_date condition is nto considered here, since we want balance in all types
 	"""
 	return frappe.db.sql("""
-	select
-		c.parent as consolidation_code,
-		posting_date, account, gl.party_type, gl.party,
-		sum(debit) as debit, sum(credit) as credit,
-		voucher_type, voucher_no, remarks, is_opening
-	from `tabGL Entry` gl left join `tabConsolidation Item` c on c.party = gl.party
-	where company=%(company)s {conditions}
-	group by voucher_type, voucher_no, party_type, party
-	order by posting_date, party_type, party"""\
-	.format(conditions=get_conditions(filters)), filters, as_dict=1)
+	select * from
+		(select
+			c.parent as consolidation_code,
+			posting_date, account, gl.party_type, gl.party,
+			sum(debit) as debit, sum(credit) as credit,
+			voucher_type, voucher_no, remarks, is_opening
+		from `tabGL Entry` gl left join `tabConsolidation Item` c on c.party = gl.party
+		where company=%(company)s
+		group by voucher_type, voucher_no) tb
+		where {conditions}
+		order by posting_date, party_type, party"""\
+	.format(conditions=get_conditions(filters)), filters, as_dict=1, debug=1)
 	
 def get_conditions(filters):
 	conditions = []
 	
 	# all Customer and Supplier GLs
-	conditions.append("gl.party_type in ('Customer', 'Supplier')")	
+	conditions.append("party_type in ('Customer', 'Supplier')")	
 		
 	if filters.get("consolidation_code"):
-		conditions.append("gl.party in (select party from `tabConsolidation Item` where parent = %(consolidation_code)s)")
+		conditions.append("party in (select party from `tabConsolidation Item` where parent = %(consolidation_code)s)")
 	else:
-		conditions.append("gl.party in (select party from `tabConsolidation Item`)")
+		conditions.append("party in (select party from `tabConsolidation Item`)")
 		
 	from frappe.desk.reportview import build_match_conditions
 	match_conditions = build_match_conditions("GL Entry")
 	if match_conditions: conditions.append(match_conditions)
 	
-	return "and {}".format(" and ".join(conditions)) if conditions else ""
+	return "{}".format(" and ".join(conditions)) if conditions else ""
 	
 def get_data_with_opening_closing(filters, gl_entries):
 	data = []
@@ -146,6 +148,13 @@ def get_consolidation_wise_gle(filters, gl_entries, gle_map):
 			balance += gle.debit
 			balance -= gle.credit
 			gle["balance"] = balance
+			
+			if gle.debit >= gle.credit:
+				gle.debit -= gle.credit
+				gle.credit = 0
+			else:
+				gle.credit -= gle.debit
+				gle.debit = 0;
 			
 			consolidation_dict.entries.append(gle)
 			consolidation_dict.total_debit += flt(gle.debit, 3)
