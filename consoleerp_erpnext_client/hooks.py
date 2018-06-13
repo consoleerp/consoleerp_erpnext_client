@@ -88,6 +88,7 @@ doctype_js = {
 # ---------------
 scheduler_events = {
 	"daily": [
+		"frappe.clear_cache",
 		"consoleerp_erpnext_client.utils.google_drive.upload_backup"
 	]
 }
