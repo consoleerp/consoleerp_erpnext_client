@@ -120,12 +120,26 @@ scheduler_events = {
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "consoleerp_erpnext_client.event.get_events"
 # }
-fixtures = [{
-		"dt": "Property Setter",
-		"filters": [
-			["name", "in", [
-				"Sales Invoice Payment-amount-depends_on"			# Sales Return
-			]]
-		]
+fixtures = [
+{
+	"dt": "Property Setter",
+	"filters": [
+		["name", "in", [
+			"Sales Invoice Payment-amount-depends_on"			# Sales Return
+		]]
+	]
+},
+{
+	"dt": "Custom Field",
+	"filters": [
+		["name", "in", [
+		
+			# Batch Expiry Notifications
+			"Item-notifications",
+			"Item-notify_batch_expiration",
+			"Item-notify_expiration_before",
+			"Batch-hide_expiry_notification"
+		]]
+	]
 }]
 

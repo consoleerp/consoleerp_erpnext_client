@@ -1,4 +1,5 @@
 ConsoleERP ERPNext Client
 ConsoleERP Accounts
+ConsoleERP Stock
 HR - Console ERP
 ConsoleERP Manufacturing
