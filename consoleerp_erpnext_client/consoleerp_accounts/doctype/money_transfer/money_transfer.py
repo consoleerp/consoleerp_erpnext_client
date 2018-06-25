@@ -12,7 +12,14 @@ from erpnext import get_company_currency
 
 class MoneyTransfer(AccountsController):
 
-	def submit(self):
+	def on_submit(self):
+		self.make_gl_entries()
+	
+	def on_cancel(self):
+		self.make_gl_entries()
+	
+	
+	def make_gl_entries(self):
 		gl_entries = []
 		
 		from_account = self.get_from_account()
@@ -68,7 +75,7 @@ class MoneyTransfer(AccountsController):
 
 	def validate_accounts(self):
 		def validate_account(account):
-			acc = frappe.get_value("Account", "Employee Receivable - GB", ["name", "account_type", "root_type", "is_group", "company"], as_dict=1)
+			acc = frappe.get_value("Account", account, ["name", "account_type", "root_type", "is_group", "company"], as_dict=1)
 			
 			if acc.company != self.company:
 				frappe.throw("Account is not of this company")
@@ -77,7 +84,7 @@ class MoneyTransfer(AccountsController):
 				frappe.throw("Account should not be a group")
 			
 			if acc.account_type not in ["Cash", "Bank"]:
-				frappe.throw("Account should be cash or bank account")
+				frappe.throw("Account should be cash or bank account. The Account {} is of Type {}".format(account, acc.account_type))
 			
 			if acc.root_type != "Asset":
 				frappe.throw("Account should be an Asset Account")
