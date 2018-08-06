@@ -179,54 +179,61 @@ class MinFact(StockController):
 		gl_entries = []
 		
 		self.auto_accounting_for_stock = erpnext.is_perpetual_inventory_enabled(self.company)
-		
+		target_warehouse_account = warehouse_account.get(self.warehouse)
 		if self.auto_accounting_for_stock:
-			gl_entries = super(MinFact, self).get_gl_entries(warehouse_account)
-			self.make_production_item_gl_entry(gl_entries)			
-		
+			self.get_stock_gl_entries(gl_entries, warehouse_account)
 		
 		if self.purpose == "Subcontract":
-			self.make_supplier_gl_entry(gl_entries)
+			self.make_supplier_gl_entry(gl_entries, target_warehouse_account)
 			self.make_tax_gl_entries(gl_entries)
 			self.make_payment_gl_entries(gl_entries)
-		else:
-			self.make_additional_cost_gl_entry(gl_entries)
 		
-		print("FINAL")
+		self.make_additional_cost_gl_entry(gl_entries, target_warehouse_account)
+		
 		print(gl_entries)
+		print("FINAL")
 		return gl_entries
 	
-	def make_production_item_gl_entry(self, gl_entries):
+	def get_stock_gl_entries(self, gl_entries, warehouse_account):
 		# production_item gl_entry
 		# have to specify manually since get_voucher_details iterates through child table only
-		prod_sle = self.get_stock_ledger_details().get(self.name)[0]
-		if not prod_sle.stock_value_difference and not item_row.get("allow_zero_valuation_rate"):
+		sles = self.get_stock_ledger_details()
+		prod_sle = sles.get(self.name)[0] # has coc.name when made;
+		if not prod_sle.stock_value_difference:
 			# updates valuation_Rate, stock_value_difference etc
 			prod_sle = self.update_stock_ledger_entries(prod_sle)
 		
-		warehouse_account = get_warehouse_account_map()
 		if not warehouse_account.get(prod_sle.warehouse):
 			frappe.throw("No warehouse account specified for {}".format(prod_sle.warehouse))
-		# to warehouse account
-		gl_entries.append(self.get_gl_dict({
-			"account": warehouse_account[prod_sle.warehouse]["account"],
-			"against": self.expense_account,
-			"cost_center": self.cost_center,
-			"remarks": self.get("remarks") or "Accounting Entry for Stock",
-			"debit": flt(prod_sle.stock_value_difference, 2),
-		}, warehouse_account[prod_sle.warehouse]["account_currency"]))
+		
+		against_wacc = []
+		for d in self.get('items'):
+			sle = sles.get(d.name)[0]
+			if not sle.stock_value_difference:
+				sle = self.update_stock_ledger_entries(sle)
+			
+			# raw material warehouses
+			gl_entries.append(self.get_gl_dict({
+				"account": warehouse_account[sle.warehouse]["account"],
+				"against": warehouse_account.get(prod_sle.warehouse)["account"],
+				"cost_center": self.cost_center,
+				"remarks": self.get("remarks") or "Accounting Entry for Stock",
+				"credit": -1 * flt(sle.stock_value_difference, 2), # -1 * since raw material is consumed, stock_value_difference is negative
+			}, warehouse_account[sle.warehouse]["account_currency"]))
+			
+			if sle.warehouse not in against_wacc:
+				against_wacc.append(sle.warehouse)
 
-		# to expense account (Cost of Goods Sold)
+		# to target warehouse
 		gl_entries.append(self.get_gl_dict({
-			"account": self.expense_account,
-			"against": warehouse_account[prod_sle.warehouse]["account"],
+			"account": warehouse_account.get(prod_sle.warehouse)["account"],
+			"against": ", ".join(against_wacc),
 			"cost_center": self.cost_center,
 			"remarks": self.get("remarks") or "Accounting Entry for Stock",
-			"credit": flt(prod_sle.stock_value_difference, 2),
-			"project": self.get("project") or self.get("project")
-		}))
+			"debit": flt(prod_sle.stock_value_difference, 2)
+		}, warehouse_account.get(prod_sle.warehouse)["account_currency"]))
 	
-	def make_additional_cost_gl_entry(self, gl_entries):
+	def make_additional_cost_gl_entry(self, gl_entries, target_warehouse_account):
 		# additional_cost is given to the manufactured item.
 		# so we pass it there		
 		additional_cost = flt(self.base_additional_cost, self.precision("base_additional_cost"))
@@ -234,22 +241,18 @@ class MinFact(StockController):
 		if additional_cost:
 			gl_entries.append(self.get_gl_dict({
 				"account": expenses_included_in_valuation,
-				"against": self.expense_account,
+				"against": target_warehouse_account['account'],
 				"cost_center": self.cost_center,
 				"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
 				"credit": additional_cost
 			}))
-
-			gl_entries.append(self.get_gl_dict({
-				"account": self.expense_account,
-				"against": expenses_included_in_valuation,
-				"cost_center": self.cost_center,
-				"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
-				"credit": -1 * additional_cost # put it as negative credit instead of debit purposefully
-			}))
 	
-	def make_supplier_gl_entry(self, gl_entries):
+	def make_supplier_gl_entry(self, gl_entries, target_warehouse_account):
 		grand_total = self.grand_total
+		# additional costs are entered as part of taxes_and_charges usually
+		# here, we simply enter it against Expenses Included in Valuation and Warehouse
+		# usually, we have to debit it in expense head
+		grand_total -= self.additional_cost
 		if grand_total:
 			# Didnot use base_grand_total to book rounding loss gle
 			grand_total_in_company_currency = flt(grand_total * self.conversion_rate,
@@ -259,7 +262,7 @@ class MinFact(StockController):
 					"account": self.credit_to,
 					"party_type": "Supplier",
 					"party": self.supplier,
-					"against": self.expense_account,
+					"against": target_warehouse_account['account'],
 					"credit": grand_total_in_company_currency,
 					"credit_in_account_currency": grand_total_in_company_currency \
 						if self.party_account_currency == self.company_currency else grand_total,
@@ -267,15 +270,6 @@ class MinFact(StockController):
 					"against_voucher_type": self.doctype,
 				}, self.party_account_currency)
 			)
-			
-			# the amount charged by supplier has to be sent to stores. we send it to CGS, prev. stock entries take it from CGS to Stores
-			gl_entries.append(self.get_gl_dict({
-				"account": self.expense_account,
-				"against": self.supplier,
-				"cost_center": self.cost_center,
-				"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
-				"credit": -1 * self.base_total # put it as negative credit instead of debit purposefully
-			}))
 			
 	def make_tax_gl_entries(self, gl_entries):
 		# we dont do these when doing an opeing entry
