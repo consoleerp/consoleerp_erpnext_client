@@ -40,34 +40,45 @@ class MinFact(StockController):
 			frappe.throw("Invalid Purpose")
 		
 		if self.purpose != "Subcontract":
-			self.taxes = []
 			self.production_rate = 0
+			
+			for tax in self.taxes:
+				if 'Total' in tax.category:
+					frappe.throw("Invalid charge type for tax row {}.\nIt should be of category 'Valuation' only".format(tax.description))
 		
 	def calculate(self):		
 		
 		self.total = 0
-		if self.apply_rate_on == "Production Qty":
-			self.total = flt(self.production_rate * self.qty + self.additional_cost, self.precision("total"))
-		elif self.apply_rate_on == "Total Raw Material Qty":
-			for item in self.items:
-				self.total += (item.qty or 0) * self.production_rate
+		if self.purpose == "Subcontract":
+			if self.apply_rate_on == "Production Qty":
+				self.total = flt(self.production_rate * self.qty, self.precision("total"))
+			elif self.apply_rate_on == "Total Raw Material Qty":
+				for item in self.items:
+					self.total += (item.qty or 0) * self.production_rate
 		
 		total_tax = 0
-		
 		for tax in self.taxes:
-			if tax.rate:
+			if tax.charge_type == "Actual":
+				tax_amount = tax.tax_amount
+			elif tax.charge_type == "On Net Total":
 				tax_amount = flt(tax.rate * self.total / 100, self.precision("total_taxes_and_charges"))
 				tax.tax_amount = tax_amount
-				tax.tax_amount_after_discount_amount = tax.tax_amount
-				total_tax += tax_amount
-				tax.total = self.total + total_tax
+			else:
+				frappe.throw("Invalid tax type. Only 'Actual' & 'On Net Total' is accepted")
+			
+			tax.tax_amount_after_discount_amount = tax.tax_amount
+			
+			if tax.category in ['Total', 'Valuation and Total']: # add to total only if tax.category asks us to
+				total_tax += (-1 * tax_amount) if tax.add_deduct_tax == "Deduct" else tax_amount
+			
+			tax.total = self.total + total_tax
+			self.set_in_company_currency(tax, ["tax_amount", "tax_amount_after_discount_amount"])
 				
-				self.set_in_company_currency(tax, ["tax_amount", "tax_amount_after_discount_amount"])
 		
 		self.total_taxes_and_charges = flt(total_tax, self.precision("total_taxes_and_charges"))
 		self.grand_total = flt(self.total_taxes_and_charges + self.total, self.precision("grand_total"))
 		
-		self.set_in_company_currency(self, ["total", "total_taxes_and_charges", "grand_total", "additional_cost"])
+		self.set_in_company_currency(self, ["total", "total_taxes_and_charges", "grand_total"])
 	
 	def set_in_company_currency(self, doc, fields):
 		for f in fields:
@@ -129,9 +140,15 @@ class MinFact(StockController):
 			rm.basic_amount = flt(rm.basic_rate * rm.stock_qty, self.precision("basic_amount", rm))
 			total_rm_rate += rm.basic_amount
 		
-		# rate = raw_material_csot + (supplier cost if subcontracting)
+		# get additional charges (included for valuation)
+		charges_in_valuation = 0
+		for tax in self.taxes:
+			if tax.category in ['Valuation', 'Valuation and Total']:
+				charges_in_valuation += tax.base_tax_amount
+				
 		
-		self.rate = flt((total_rm_rate + (self.base_total or 0)) / self.qty, self.precision("rate"))
+		# rate = raw_material_csot + (supplier cost if subcontracting)
+		self.rate = flt((total_rm_rate + (self.base_total or 0) + charges_in_valuation) / self.qty, self.precision("rate"))
 	
 	def get_items_from_bom(self):
 		self.items = []
@@ -185,10 +202,9 @@ class MinFact(StockController):
 		
 		if self.purpose == "Subcontract":
 			self.make_supplier_gl_entry(gl_entries, target_warehouse_account)
-			self.make_tax_gl_entries(gl_entries)
 			self.make_payment_gl_entries(gl_entries)
 		
-		self.make_additional_cost_gl_entry(gl_entries, target_warehouse_account)
+		self.make_tax_gl_entries(gl_entries)
 		
 		print(gl_entries)
 		print("FINAL")
@@ -233,26 +249,11 @@ class MinFact(StockController):
 			"debit": flt(prod_sle.stock_value_difference, 2)
 		}, warehouse_account.get(prod_sle.warehouse)["account_currency"]))
 	
-	def make_additional_cost_gl_entry(self, gl_entries, target_warehouse_account):
-		# additional_cost is given to the manufactured item.
-		# so we pass it there		
-		additional_cost = flt(self.base_additional_cost, self.precision("base_additional_cost"))
-		expenses_included_in_valuation = self.get_company_default("expenses_included_in_valuation")
-		if additional_cost:
-			gl_entries.append(self.get_gl_dict({
-				"account": expenses_included_in_valuation,
-				"against": target_warehouse_account['account'],
-				"cost_center": self.cost_center,
-				"remarks": self.get("remarks") or _("Accounting Entry for Stock"),
-				"credit": additional_cost
-			}))
-	
 	def make_supplier_gl_entry(self, gl_entries, target_warehouse_account):
 		grand_total = self.grand_total
 		# additional costs are entered as part of taxes_and_charges usually
 		# here, we simply enter it against Expenses Included in Valuation and Warehouse
 		# usually, we have to debit it in expense head
-		grand_total -= self.additional_cost
 		if grand_total:
 			# Didnot use base_grand_total to book rounding loss gle
 			grand_total_in_company_currency = flt(grand_total * self.conversion_rate,
@@ -274,6 +275,8 @@ class MinFact(StockController):
 	def make_tax_gl_entries(self, gl_entries):
 		# we dont do these when doing an opeing entry
 		# referred from purchase_invoice.py items
+		
+		expenses_included_in_valuation = self.get_company_default("expenses_included_in_valuation")
 	
 		# tax table gl entries
 		valuation_tax = {}
@@ -302,41 +305,15 @@ class MinFact(StockController):
 				valuation_tax[tax.cost_center] += \
 					(tax.add_deduct_tax == "Add" and 1 or -1) * flt(tax.base_tax_amount_after_discount_amount)
 
-		if self.base_total_taxes_and_charges and valuation_tax:
-			# credit valuation tax amount in "Expenses Included In Valuation"
-			# this will balance out valuation amount included in cost of goods sold
-
-			total_valuation_amount = sum(valuation_tax.values())
-			amount_including_divisional_loss = self.base_total_taxes_and_charges
-			i = 1
-			for cost_center, amount in valuation_tax.items():
-				if i == len(valuation_tax):
-					applicable_amount = amount_including_divisional_loss
-				else:
-					applicable_amount = self.base_total_taxes_and_charges * (amount / total_valuation_amount)
-					amount_including_divisional_loss -= applicable_amount
-
-				gl_entries.append(
-					self.get_gl_dict({
-						"account": self.expenses_included_in_valuation,
-						"cost_center": cost_center,
-						"against": self.supplier,
-						"credit": applicable_amount,
-						"remarks": self.remarks or "Accounting Entry for Stock"
-					})
-				)
-
-				i += 1
-
 		if self.auto_accounting_for_stock and valuation_tax:
 			for cost_center, amount in valuation_tax.items():
 				gl_entries.append(
 					self.get_gl_dict({
-						"account": self.expenses_included_in_valuation,
+						"account": expenses_included_in_valuation,
 						"cost_center": cost_center,
 						"against": self.supplier,
 						"credit": amount,
-						"remarks": self.remarks or "Accounting Entry for Stock"
+						"remarks": self.get('remarks') or "Accounting Entry for Stock"
 					})
 				)
 	
