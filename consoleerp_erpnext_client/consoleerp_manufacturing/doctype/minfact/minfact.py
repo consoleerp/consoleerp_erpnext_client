@@ -26,6 +26,13 @@ class MinFact(StockController):
 		self.validate_item()
 		self.calculate()
 		self.update_basic_rates()
+		
+		# stock difference acc
+		if not self.expense_account:
+			self.expense_account = frappe.db.get_value("Company", self.company, "stock_adjustment_account")
+		
+		if not self.cost_center:
+			self.cost_center = frappe.db.get_value("Company", self.company, "cost_center")
 	
 	def on_submit(self):
 		self.update_stock_ledger()
@@ -221,7 +228,15 @@ class MinFact(StockController):
 		
 		if not warehouse_account.get(prod_sle.warehouse):
 			frappe.throw("No warehouse account specified for {}".format(prod_sle.warehouse))
+			
+		# use expense_account entries IF:
+		# - this is Manufacturing
+		# - no taxes
+		use_expense_account = False
+		if self.purpose == "Manufacture" and (not self.get('taxes') or len(self.get('taxes')) == 0):
+			use_expense_account = True
 		
+		expense_account_currency = get_account_currency(self.expense_account)
 		against_wacc = []
 		for d in self.get('items'):
 			sle = sles.get(d.name)[0]
@@ -231,11 +246,20 @@ class MinFact(StockController):
 			# raw material warehouses
 			gl_entries.append(self.get_gl_dict({
 				"account": warehouse_account[sle.warehouse]["account"],
-				"against": warehouse_account.get(prod_sle.warehouse)["account"],
+				"against": self.expense_account if use_expense_account else warehouse_account.get(prod_sle.warehouse)["account"],
 				"cost_center": self.cost_center,
 				"remarks": self.get("remarks") or "Accounting Entry for Stock",
 				"credit": -1 * flt(sle.stock_value_difference, 2), # -1 * since raw material is consumed, stock_value_difference is negative
 			}, warehouse_account[sle.warehouse]["account_currency"]))
+			
+			if use_expense_account:
+				gl_entries.append(self.get_gl_dict({
+					"account": self.expense_account,
+					"against": warehouse_account[sle.warehouse]["account"],
+					"cost_center": self.cost_center,
+					"remarks": self.get("remarks") or "Accounting Entry for Stock",
+					"debit": -1 * flt(sle.stock_value_difference, 2), # -1 * since raw material is consumed, stock_value_difference is negative
+				}, expense_account_currency))
 			
 			if sle.warehouse not in against_wacc:
 				against_wacc.append(sle.warehouse)
@@ -243,11 +267,20 @@ class MinFact(StockController):
 		# to target warehouse
 		gl_entries.append(self.get_gl_dict({
 			"account": warehouse_account.get(prod_sle.warehouse)["account"],
-			"against": ", ".join(against_wacc),
+			"against": self.expense_account if use_expense_account else ", ".join(against_wacc),
 			"cost_center": self.cost_center,
 			"remarks": self.get("remarks") or "Accounting Entry for Stock",
 			"debit": flt(prod_sle.stock_value_difference, 2)
 		}, warehouse_account.get(prod_sle.warehouse)["account_currency"]))
+		
+		if use_expense_account:
+			gl_entries.append(self.get_gl_dict({
+				"account": self.expense_account,
+				"against": warehouse_account.get(prod_sle.warehouse)["account"],
+				"cost_center": self.cost_center,
+				"remarks": self.get("remarks") or "Accounting Entry for Stock",
+				"credit": flt(prod_sle.stock_value_difference, 2), # -1 * since raw material is consumed, stock_value_difference is negative
+			}, expense_account_currency))
 	
 	def make_supplier_gl_entry(self, gl_entries, target_warehouse_account):
 		grand_total = self.grand_total
