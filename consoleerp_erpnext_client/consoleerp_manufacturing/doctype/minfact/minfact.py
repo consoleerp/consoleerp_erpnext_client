@@ -23,6 +23,8 @@ class MinFact(StockController):
 		self.validate_purpose()
 		if self.purpose == "Subcontract":
 			self.validate_credit_to_acc()
+			if not self.production_rate:
+				frappe.throw("Production Rate is mandatory when SubContracting")
 		self.validate_item()
 		self.calculate()
 		self.update_basic_rates()
